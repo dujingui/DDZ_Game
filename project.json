@@ -1,0 +1,26 @@
+{
+    "project_type": "javascript",
+
+    "debugMode" : 1,
+    "showFPS" : false,
+    "frameRate" : 60,
+    "noCache" : false,
+    "id" : "gameCanvas",
+    "renderMode" : 0,
+    "engineDir":"frameworks/cocos2d-html5",
+
+    "modules" : ["cocos2d"],
+
+    "jsList" : [
+        "src/resource.js",
+        "src/CardDefine.js",
+        "src/Util.js",
+        "src/Card.js",
+        "src/CardManager.js",
+        "src/CardUtil.js",
+        "src/Player.js",
+        "src/GameLayer.js",
+        "src/app.js",
+        "src/GameScene.js"
+    ]
+}
