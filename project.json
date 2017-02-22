@@ -18,6 +18,7 @@
         "src/Card.js",
         "src/CardManager.js",
         "src/CardUtil.js",
+        "src/CardUI.js",
         "src/Player.js",
         "src/GameLayer.js",
         "src/app.js",

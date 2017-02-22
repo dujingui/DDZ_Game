@@ -3,18 +3,18 @@ var CardUtil = {
 	getCardRect : function(color,numid){
 		var rect = null;
 		if(color === CardDef.CardColor.CC_DigJoker){
-			rect = cc.Rect(0,0,29,131);
+			rect = cc.rect(0,0,29,131);
 		}else if(color === CardDef.CardColor.CC_SmallJoker){
-			rect = cc.Rect(29,0,29,131);
+			rect = cc.rect(29,0,29,131);
 		}else{
 			var line = 1;
 			var column = numid - 1;
 			if(color === CardDef.CardColor.CC_Spades || color === CardDef.CardColor.CC_Clubs){
 				line = 0;
 			}
-			var x = column * 37.3;
+			var x = column * 38.3;
 			var y = line * 41.7;
-			rect = cc.rect(x,y,37.3,41.7);
+			rect = cc.rect(x,y,38.3,41.7);
 		}
 		return rect;
 	},
@@ -31,7 +31,10 @@ var CardUtil = {
 		}
 	},
 
-	getCardColorFileName : function(){
+	getCardColorFileName : function(color){
+		if(color === CardDef.CardColor.CC_DigJoker || color === CardDef.CardColor.CC_SmallJoker){
+			return null;
+		}
 		return res.card_color;
 	},
 
@@ -42,4 +45,5 @@ var CardUtil = {
 			return res.card_number;
 		}
 	}
+
 };

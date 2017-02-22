@@ -18,8 +18,16 @@ var Player = cc.Sprite.extend({
 		this._isAI = isAI;
 	},
 
+	getCardList : function(){
+		return this._cardList;
+	},
+
+	getCardSoleID : function(index){
+		return this._cardList[index];
+	},
+
 	deal : function(id){
-		if(id <= 1 && id <= 54){
+		if(id >= 1 && id <= 54){
 			this._cardList.push(id);
 		}
 	}

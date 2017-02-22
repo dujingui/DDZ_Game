@@ -1,7 +1,7 @@
 
 var CardDef = {};
 
-CardDef.CardNum = 45;
+CardDef.CardNum = 54;
 
 CardDef.CardColor = {
 	CC_Hearts 		: 0,	//红桃

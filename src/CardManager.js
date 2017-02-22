@@ -44,7 +44,7 @@ function CardManager(){
 		//方片
 		cards.push(new Card(CardDef.CardColor.CC_Diamonds,12,1,27));
 		cards.push(new Card(CardDef.CardColor.CC_Diamonds,13,2,28));
-		cards.push(new Card(CardDef.CardColor.CC_Diamonds,1,3,28));
+		cards.push(new Card(CardDef.CardColor.CC_Diamonds,1,3,29));
 		cards.push(new Card(CardDef.CardColor.CC_Diamonds,2,4,30));
 		cards.push(new Card(CardDef.CardColor.CC_Diamonds,3,5,31));
 		cards.push(new Card(CardDef.CardColor.CC_Diamonds,4,6,32));
@@ -80,12 +80,33 @@ function CardManager(){
 		return cards;
 	},
 
-	this.shuffle = function(cards){
-		for(var i = 0;i < CardDef.CardNum;i ++){
-			var randomNum = Util.GetRandomNum(0,CardDef.CardNum);
-			var temp = cards[randomNum];
-			cards[randomNum] = cards[i];
-			cards[i] = temp;
+	this.shuffle = function(){
+		if(this._cards){
+			for(var i = 0;i < CardDef.CardNum;i ++){
+				var randomNum = Util.GetRandomNum(0,CardDef.CardNum - 1);
+				var temp = this._cards[randomNum];
+				this._cards[randomNum] = this._cards[i];
+				this._cards[i] = temp;
+			}
+		}
+	},
+
+	this.sort = function(cards){
+		if(cards){
+			var len = cards.length;
+			for(var i = 0; i < len - 1; i ++){
+				var valuei = this.getCardValue(cards[i]);
+				for(var j = i + 1; j < len; j ++){
+					var valuej = this.getCardValue(cards[j]);
+					if(valuei < valuej){
+						var temp = cards[i];
+						cards[i] = cards[j];
+						cards[j] = temp;
+
+						valuei = this.getCardValue(cards[i]);
+					}
+				}
+			}
 		}
 	},
 
