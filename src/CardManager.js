@@ -82,8 +82,9 @@ function CardManager(){
 
 	this.shuffle = function(){
 		if(this._cards){
-			for(var i = 0;i < CardDef.CardNum;i ++){
-				var randomNum = Util.GetRandomNum(0,CardDef.CardNum - 1);
+			var len = this._cards.length;
+			for(var i = 0;i < len;i ++){
+				var randomNum = Util.GetRandomNum(0,len - 1);
 				var temp = this._cards[randomNum];
 				this._cards[randomNum] = this._cards[i];
 				this._cards[i] = temp;
@@ -108,6 +109,41 @@ function CardManager(){
 				}
 			}
 		}
+	},
+
+	this.insert = function(cards,cardid){
+		var isInsert = false;
+		var value1 = this.getCardValue(cardid);
+		for(var i = 0;i < cards.length;i ++){
+			var value2 = this.getCardValue(cards[i]);
+			if(value1 > value2){
+				cards.splice(i,0,cardid);
+				isInsert = true;
+				break;
+			}
+		}
+		if(!isInsert){
+			cards.push(cardid);
+		}
+	},
+
+
+	this.getCardIndex = function(cards,soleID){
+		for(var i = 0;i < cards.length;i ++){
+			var cardData = this.getCardData(cards[i]);
+			if(soleID == cardData.soleID){
+				return i;
+			}
+		}
+		return -1;
+	},
+
+	this.getBottomCard = function(){
+		var bottomCards = [];
+		for(var i = 51;i < 54;i ++){
+			bottomCards.push(this.getSoleIDByIndex(i));
+		}
+		return bottomCards;
 	},
 
 	this.getCardData = function(soleid){

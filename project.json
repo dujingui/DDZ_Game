@@ -9,16 +9,20 @@
     "renderMode" : 0,
     "engineDir":"frameworks/cocos2d-html5",
 
-    "modules" : ["cocos2d"],
+    "modules" : ["cocos2d","ccui"],
 
     "jsList" : [
         "src/resource.js",
         "src/CardDefine.js",
+        "src/EventType.js",
+        "src/EventCenter.js",
         "src/Util.js",
         "src/Card.js",
         "src/CardManager.js",
+        "src/PlayerMgr.js",
         "src/CardUtil.js",
         "src/CardUI.js",
+        "src/GameRules.js",
         "src/Player.js",
         "src/GameLayer.js",
         "src/app.js",
