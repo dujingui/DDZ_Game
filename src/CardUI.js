@@ -6,6 +6,8 @@ var CardUI = cc.Sprite.extend({
 	_colorSprite1	: null,
 	_colorSprite2 	: null,
 
+	_id 			: null,
+
 	_isSelected		: null,
 
 	ctor : function(cardData){
@@ -20,8 +22,13 @@ var CardUI = cc.Sprite.extend({
 		this._initEvent();
 	},
 
+	getID : function(){
+		return this._id;
+	},
+
 	_init : function(cardData){
 		this.setTag(cardData.soleID);
+		this._id = cardData.soleID;
 		this._isSelected = false;
 	},
 
