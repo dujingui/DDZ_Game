@@ -21,6 +21,8 @@ function EventCenter(){
 		};
 
 		this.eventList[event_type].push(eventObj);
+
+		return token;
 	},
 
 	this.PublishEvent = function(event_type,other){
@@ -29,6 +31,18 @@ function EventCenter(){
 			for(var i = 0;i < eventList.length;i ++){
 				var eventObj = eventList[i];
 				eventObj.func(other);
+			}
+		}
+	},
+
+	this.UnregisterEvent = function(token){
+		for(var key in this.eventList){
+			var events = this.eventList[key];
+			for(var i = 0;i < events.length;i ++){
+				var event = events[i];
+				if(event.token == token){
+					events.splice(i,1);
+				}
 			}
 		}
 	},

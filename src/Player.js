@@ -63,9 +63,9 @@ var Player = cc.Sprite.extend({
 	},
 
 	callCard : function(){
-		if(!this.isAI()){
-			EventCenter.PublishEvent(EventType.ET_CALL_CARD);
-		}
+		// if(!this.isAI()){
+		// 	EventCenter.PublishEvent(EventType.ET_CALL_CARD);
+		// }
 	},
 
 	robLandlord : function(){
@@ -88,7 +88,7 @@ var Player = cc.Sprite.extend({
 		return this._isLandlord;
 	},
 
-	nextPlayer : function(){
+	next : function(){
 		var id;
 
 		if(this._id >= 3){
@@ -96,6 +96,11 @@ var Player = cc.Sprite.extend({
 		}else{
 			id = this._id + 1;
 		}
+		return id;
+	},
+
+	nextPlayer : function(){
+		var id = this.next();
 		return PlayerMgr.GetPlayer(id);
 	},
 

@@ -18,6 +18,7 @@
         "src/EventCenter.js",
         "src/Util.js",
         "src/Card.js",
+        "src/UIManager.js",
         "src/CardManager.js",
         "src/PlayerMgr.js",
         "src/CardUtil.js",

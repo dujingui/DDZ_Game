@@ -77,15 +77,29 @@ function GameRules(){
 		EventCenter.PublishEvent(EventType.ET_DEAL);
 	},
 
-	//给地主发底牌
+	//计算是否叫牌
+	this.CalcIsCallCard = function(id){
+		setTimeout(function(){
+			EventCenter.PublishEvent(EventType.ET_CALL_CARD,{id:id,is_call:false});
+		},3000);
+	}
+
+	//计算是否抢地主
+	this.CalcIsRobLandlord = function(id){
+		var player = PlayerMgr.GetPlayer(id);
+		if(player.isAI()){
+			var isrob = Util.GetRandomNum(0,1);
+			setTimeout(function(){
+				EventCenter.PublishEvent(EventType.ET_ROB_LANDLORD,{id:id,is_rob:isrob});
+			},3000);
+		}else{
+			EventCenter.PublishEvent(EventType.ET_ROB_START_LANDLORD,{id:id});
+		}
+	},
+
+	//获取3张底牌
 	this.GetBottomCard = function(landlordID){
-		// var player = PlayerMgr.GetPlayer(landlordID);
-		// var curCards = player.getCardList();
 		var cards = this._cardMgr.getBottomCard();
-		// for(var i = 0;i < 3;i ++ ){
-		// 	this._cardMgr.insert(curCards,cards[i]);
-		// }
-		// return cards;
 		return cards;
 	},
 
@@ -93,8 +107,7 @@ function GameRules(){
 	this.CallCard = function(){
 		this._curStep = this.Step.CallCard;
 		var callCardPlayerID = 1;
-		var player = PlayerMgr.GetPlayer(callCardPlayerID);
-		player.callCard();
+		EventCenter.PublishEvent(EventType.ET_START_CALL_CARD,{player_id:callCardPlayerID});
 	},
 
 	this.GetCardData = function(id){

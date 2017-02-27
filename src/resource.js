@@ -11,10 +11,9 @@ var res = {
     num2 : "res/num2.png",
     num3 : "res/num3.png",
     num4 : "res/num4.png",
-    wordpng : "res/word_0.png",
-    wordfnt : "res/word.fnt",
     normal_btn : "res/HLDDZ_MainGame0_2x.png",
     press_btn : "res/HLDDZ_btn_y_s_p.png",
+    clock : "res/zhong.png",
     card_wang : "res/card_wang.png"
 };
 

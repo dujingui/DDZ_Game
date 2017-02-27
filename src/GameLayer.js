@@ -39,11 +39,17 @@ var GameLayer = cc.Layer.extend({
 		EventCenter.RegisterEvent(EventType.ET_DEAL,function(){
 			_this._deal();
 		});
-		EventCenter.RegisterEvent(EventType.ET_CALL_CARD,function(){
-			_this._callCard();
+		EventCenter.RegisterEvent(EventType.ET_START_CALL_CARD,function(other){
+			_this._startCallCard(other.player_id);
 		});
 		EventCenter.RegisterEvent(EventType.ET_ROB_LANDLORD,function(other){
-			_this._robLandlord(other.id,other.isRob);
+			_this._robLandlord(other.id,other.is_rob);
+		});
+		EventCenter.RegisterEvent(EventType.ET_CALL_CARD,function(other){
+			_this._callCard(other.id,other.is_call);
+		});
+		EventCenter.RegisterEvent(EventType.ET_ROB_START_LANDLORD,function(other){
+			_this._startRobLandlord(other.id);
 		});
 	},
 
@@ -83,61 +89,32 @@ var GameLayer = cc.Layer.extend({
 		_this.schedule(dealSchedule,0.05);
 	},
 
-	//叫牌
-	_callCard : function(){
+	//开始叫牌
+	_startCallCard : function(playerid){
 		var _this = this;
         var size = cc.winSize;
 
-		var callBtn = new ccui.Button(res.normal_btn,res.press_btn);
-		var noCallBtn = new ccui.Button(res.normal_btn,res.press_btn);
-		callBtn.setScale(0.6);
-		noCallBtn.setScale(0.6);
-		callBtn.setPosition(size.width * 0.4,size.height * 0.35);
-		noCallBtn.setPosition(size.width * 0.6,size.height * 0.35);
-		this.addChild(callBtn);
-		this.addChild(noCallBtn);
+        var player = PlayerMgr.GetPlayer(playerid);
 
+        if(player.isAI()){
+    		Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_AI_Wait,this);
+        }else{
+        	Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard,this);
+        }
+	},
 
-		var def = this._getLabelDef();
+	_callCard : function(id,iscall){
+		// EventCenter.PublishEvent(EventType.ET_REMOVE_WAIT_UI);
 
-		var callLabel1 = new cc.LabelTTF("叫地主",def);
-		var callLabel2 = new cc.LabelTTF("不叫",def);
-		callLabel1.setAnchorPoint(0.5,0.5);
-		callLabel2.setAnchorPoint(0.5,0.5);
-		var btnsize = callBtn.getContentSize();
-		callLabel1.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-		callLabel2.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
+		var player = PlayerMgr.GetPlayer(id);
+		player.setIsCall(iscall);
+		this._gameRules.CalcIsRobLandlord(player.next());
 
-		noCallBtn.addChild(callLabel2);
-		callBtn.addChild(callLabel1);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{id:id,is_call:iscall});
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{id:player.next()});
 
-		var updateUI = function(isCall){
-			var text = '叫地主';
-			if(!isCall){
-				text = "不叫";
-			}
-			var tag = "call_ui";
-			var def = _this._getLabel2Def();
-			var label = new cc.LabelTTF(text,def);
-			label.setAnchorPoint(0.5,0.5);
-			label.setTag(tag);
-			label.setPosition(size.width * 0.5,size.height * 0.35);
-			_this.addChild(label);
-			callBtn.removeFromParent();
-			noCallBtn.removeFromParent();
-			_this._mainPlayer.setTempUI(tag);
-		};
-
-		callBtn.addTouchEventListener(function(){
-			updateUI(true);
-			_this._mainPlayer.setIsCall(true);
-			_this._mainPlayer.nextPlayer().robLandlord();
-		});
-		noCallBtn.addTouchEventListener(function(){
-			updateUI(false);
-			_this._mainPlayer.setIsCall(false);
-			_this._mainPlayer.nextPlayer().robLandlord();
-		});
+		// _this._mainPlayer.setIsCall(iscall);
+		// _this._mainPlayer.nextPlayer().robLandlord();
 	},
 
 	_updateCardUI : function(id,index){
@@ -190,104 +167,31 @@ var GameLayer = cc.Layer.extend({
 		return cardui;
 	},
 
-	_getLabelDef : function(){
-		var def = new cc.FontDefinition(); // 声明文字定义
-		def.fontName = "楷体"; // 字体
-		def.fontSize = 40; // 字号大小
-		def.textAlign = cc.TEXT_ALIGNMENT_CENTER; // 文字对齐
-		def.fillStyle = cc.color(100,100,100,0); // 字体(内部)颜色
-		def.strokeEnabled = true; // 开启文字描边效果
-		def.strokeStyle = cc.color("#000000"); // 描边的颜色
-		def.lineWidth = 1; // 字体的宽度
-		def.shadowOffsetX = 4; // 阴影X轴效果
-		def.shadowOffsetY = 4; // 阴影Y轴效果
-
-		return def;
-	},
-
-	_getLabel2Def : function(){
-		var def = new cc.FontDefinition(); // 声明文字定义
-		def.fontName = "楷体"; // 字体
-		def.fontSize = 50; // 字号大小
-		def.textAlign = cc.TEXT_ALIGNMENT_CENTER; // 文字对齐
-		def.fillStyle = cc.color(255,255,0); // 字体(内部)颜色
-		def.strokeEnabled = true; // 开启文字描边效果
-		def.strokeStyle = cc.color(145,72,0); // 描边的颜色
-		def.lineWidth = 3; // 字体的宽度
-		def.shadowOffsetX = 4; // 阴影X轴效果
-		def.shadowOffsetY = 4; // 阴影Y轴效果
-
-		return def;
-	},
-
 	_showRobLandlordUI : function(){
 
 	},
 
+	_startRobLandlord : function(){
+		Game_UI_Mgr.RemoveTempUI(1);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_Rob_Landlord);
+	},
+
 	_robLandlord : function(id,isRob){
-		var size = cc.winSize;
-		var _this = this;
+		var player = PlayerMgr.GetPlayer(id);
 
-		if(PlayerMgr.IsAI(id)){
-			var text = '抢地主';
-			if(!isRob){
-				text = "不抢";
-			}
-			var tag = "rob_ui";
-			var def = this._getLabel2Def();
-			var label = new cc.LabelTTF(text,def);
-			label.setAnchorPoint(0.5,0.5);
-			label.setTag(tag);
-			PlayerMgr.GetPlayer(id).setTempUI(tag);
-			this.addChild(label);
-			if(id == 2){
-				label.setPosition(size.width * 0.8,size.height * 0.6);
-			}else if(id == 3){
-				label.setPosition(size.width * 0.2,size.height * 0.6);
-			}
-			PlayerMgr.GetPlayer(id).nextPlayer().robLandlord();
-		}else{
-			var tag = PlayerMgr.GetPlayer(id).getTempUI();
-			if(tag){
-				this.removeChildByTag(tag);
-			}
-			var robBtn = new ccui.Button(res.normal_btn,res.press_btn);
-			var noRobBtn = new ccui.Button(res.normal_btn,res.press_btn);
-			robBtn.setScale(0.6);
-			noRobBtn.setScale(0.6);
-			robBtn.setPosition(size.width * 0.4,size.height * 0.35);
-			noRobBtn.setPosition(size.width * 0.6,size.height * 0.35);
-			this.addChild(robBtn);
-			this.addChild(noRobBtn);
+		if(isRob && player.isCall()){
+			player.setLandlord(true);
+			var cards = this._gameRules.GetBottomCard();
+			this._dealBottomCard(cards);
+			Game_UI_Mgr.RemoveAllTempUI();
+			return;
+		}
 
-			var def = this._getLabelDef();
-
-			var updateUI = function(){
-				robBtn.removeFromParent();
-				noRobBtn.removeFromParent();
-			};
-
-			robBtn.addTouchEventListener(function(){
-				updateUI();
-				PlayerMgr.GetPlayer(id).setLandlord();
-				var cards = _this._gameRules.GetBottomCard();
-				_this._dealBottomCard(cards);
-			});
-
-			noRobBtn.addTouchEventListener(function(){
-				updateUI();
-			});
-
-			var callLabel1 = new cc.LabelTTF("抢地主",def);
-			var callLabel2 = new cc.LabelTTF("不抢",def);
-			callLabel1.setAnchorPoint(0.5,0.5);
-			callLabel2.setAnchorPoint(0.5,0.5);
-			var btnsize = robBtn.getContentSize();
-			callLabel1.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-			callLabel2.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-
-			noRobBtn.addChild(callLabel2);
-			robBtn.addChild(callLabel1);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{id:id,is_rob:isRob});
+		EventCenter.PublishEvent(EventType.ET_REMOVE_WAIT_UI);
+		this._gameRules.CalcIsRobLandlord(player.next());
+		if(player.nextPlayer().isAI()){
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{id:player.next()});
 		}
 	},
 
