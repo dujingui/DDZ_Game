@@ -25,7 +25,7 @@ function EventCenter(){
 		return token;
 	},
 
-	this.PublishEvent = function(event_type,other){
+	this.DispatchEvent = function(event_type,other){
 		if(this.eventList[event_type]){
 			var eventList = this.eventList[event_type];
 			for(var i = 0;i < eventList.length;i ++){
@@ -52,4 +52,4 @@ function EventCenter(){
 	}  
 };
 
-var EventCenter = new EventCenter();
+var Game_Event_Center = new EventCenter();

@@ -1,8 +1,6 @@
 
 var GameLayer = cc.Layer.extend({
 
-	_gameRules	: null,
-
 	tempTest	: 1,
 
 	_mainPlayer	: null,
@@ -20,7 +18,6 @@ var GameLayer = cc.Layer.extend({
 	ctor : function(){
 		this._super();
 
-		this._gameRules = new GameRules();
 		this._cardUIList = [];
 		this._initBg();
 		this._initPlayerUI();
@@ -30,26 +27,25 @@ var GameLayer = cc.Layer.extend({
 	},
 
 	_start : function(){
-		this._gameRules.StartGame();
+		Game_Event_Center.DispatchEvent(EventType.ET_START_GAME);
+		Game_Event_Center.DispatchEvent(EventType.ET_DEAL);
+		this._deal();
 	},
 
 	_initEvent : function(){
 		var _this = this;
 
-		EventCenter.RegisterEvent(EventType.ET_DEAL,function(){
-			_this._deal();
+		Game_Notify_Center.Subscribe(ObserverType.OT_START_CALL_CARD,function(params){
+			_this._startCallCard(params.player_id);
 		});
-		EventCenter.RegisterEvent(EventType.ET_START_CALL_CARD,function(other){
-			_this._startCallCard(other.player_id);
+		Game_Notify_Center.Subscribe(ObserverType.OT_AI_WAIT,function(params){
+			_this._aiWait(params.player_id);
 		});
-		EventCenter.RegisterEvent(EventType.ET_ROB_LANDLORD,function(other){
-			_this._robLandlord(other.id,other.is_rob);
+		Game_Notify_Center.Subscribe(ObserverType.OT_START_ROB_LANDLORD,function(params){
+			_this._startRobLandlord();
 		});
-		EventCenter.RegisterEvent(EventType.ET_CALL_CARD,function(other){
-			_this._callCard(other.id,other.is_call);
-		});
-		EventCenter.RegisterEvent(EventType.ET_ROB_START_LANDLORD,function(other){
-			_this._startRobLandlord(other.id);
+		Game_Notify_Center.Subscribe(ObserverType.OT_ROB_LANDLORD,function(params){
+			_this._robLandlord(params.player_id,params.is_rob,params.cards);
 		});
 	},
 
@@ -80,13 +76,19 @@ var GameLayer = cc.Layer.extend({
 		var dealSchedule = function(){
 			if(index >= 17){
 				_this.unschedule(dealSchedule);
-				_this._gameRules.NextStep();
+				Game_Event_Center.DispatchEvent(EventType.ET_DEAL_OVER);
 				return;
 			}
 			var cardid = _this._mainPlayer.getCardSoleID(index ++);
 			_this._updateCardUI(cardid,index);
 		};
 		_this.schedule(dealSchedule,0.05);
+	},
+
+	//显示ai等待UI
+	_aiWait : function(id){
+
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{player_id:id});
 	},
 
 	//开始叫牌
@@ -96,25 +98,16 @@ var GameLayer = cc.Layer.extend({
 
         var player = PlayerMgr.GetPlayer(playerid);
 
-        if(player.isAI()){
-    		Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_AI_Wait,this);
-        }else{
-        	Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard,this);
-        }
+    	Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard);
 	},
 
 	_callCard : function(id,iscall){
-		// EventCenter.PublishEvent(EventType.ET_REMOVE_WAIT_UI);
-
 		var player = PlayerMgr.GetPlayer(id);
-		player.setIsCall(iscall);
-		this._gameRules.CalcIsRobLandlord(player.next());
 
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{id:id,is_call:iscall});
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{id:player.next()});
 
-		// _this._mainPlayer.setIsCall(iscall);
-		// _this._mainPlayer.nextPlayer().robLandlord();
+		EventCenter.PublishEvent(EventType.ET_CALL_LANDLORD,{player_id:id});
 	},
 
 	_updateCardUI : function(id,index){
@@ -159,7 +152,7 @@ var GameLayer = cc.Layer.extend({
 	_createCardUI : function(id){
 		// console.log(id);
 
-		var card = this._gameRules.GetCardData(id);
+		var card = Game_Rules.GetCardData(id);
 		var cardui = new CardUI(card);
 
 		this._cardUIList.push(cardui);
@@ -167,37 +160,32 @@ var GameLayer = cc.Layer.extend({
 		return cardui;
 	},
 
-	_showRobLandlordUI : function(){
-
-	},
-
 	_startRobLandlord : function(){
 		Game_UI_Mgr.RemoveTempUI(1);
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_Rob_Landlord);
 	},
 
-	_robLandlord : function(id,isRob){
+	_robLandlord : function(id,isRob,cards){
 		var player = PlayerMgr.GetPlayer(id);
 
-		if(isRob && player.isCall()){
-			player.setLandlord(true);
-			var cards = this._gameRules.GetBottomCard();
-			this._dealBottomCard(cards);
+		if(!player.isAI()){
+			if(isRob){
+				this._dealBottomCard(id,cards);
+			}else{
+
+			}
 			Game_UI_Mgr.RemoveAllTempUI();
 			return;
 		}
 
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{id:id,is_rob:isRob});
-		EventCenter.PublishEvent(EventType.ET_REMOVE_WAIT_UI);
-		this._gameRules.CalcIsRobLandlord(player.next());
-		if(player.nextPlayer().isAI()){
-			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{id:player.next()});
-		}
+		Game_UI_Mgr.RemoveTempUI(id);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{player_id:id,is_rob:isRob});
+		Game_Event_Center.DispatchEvent(EventType.ET_PLAYER_ROB_OVER,{player_id:id});
 	},
 
 	_setCardUIOrder : function(){
 		var cardList = this._mainPlayer.getCardList();
-		var cardMgr = this._gameRules.GetCardMgr();
+		var cardMgr = Game_Rules.GetCardMgr();
 		for(var i = 0;i < this._cardUIList.length;i++){
 			var cardUI = this._cardUIList[i];
 			var order = cardMgr.getCardIndex(cardList,cardUI.getID());
@@ -205,9 +193,9 @@ var GameLayer = cc.Layer.extend({
 		}
 	},
 
-	_dealBottomCard : function(cards){
+	_dealBottomCard : function(id,cards){
 		var cardList = this._mainPlayer.getCardList();
-		var cardMgr = this._gameRules.GetCardMgr();
+		var cardMgr = Game_Rules.GetCardMgr();
 
 		for(var i = 0;i < cards.length;i ++){
 			var cardData = cardMgr.getCardData(cards[i]);

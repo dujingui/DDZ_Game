@@ -29,7 +29,7 @@ function Game_UI_Mgr(){
 		var tempUI = player.getTempUI();
 		if(tempUI){
 			var parent = cc.director.getRunningScene();
-			parent.removeChildByTag(tempUI);
+			parent.removeChildByTag(tempUI,true);
 			player.setTempUI(null);
 		}
 	},
@@ -49,13 +49,17 @@ function Game_UI_Mgr(){
         var size = cc.winSize;
 		var waitTime = 30;
 		var parent = cc.director.getRunningScene();
+		var player = PlayerMgr.GetPlayer(params.player_id);
 
+		var tag = 'wait-ui_' + params.player_id;
 		var clockUI = new cc.Sprite(res.clock);
 		var numUI = new cc.LabelAtlas(waitTime,res.num2,40,42,"0");
 		numUI.setAnchorPoint(0.5,0.5);
 		numUI.setScale(0.6);
+		clockUI.setTag(tag);
+		player.setTempUI(tag);
 		var temp = clockUI.getContentSize();
-		if(params.id == 2){
+		if(params.player_id == 2){
 			clockUI.setPosition(size.width * 0.8,size.height * 0.65);
 		}else{
 			clockUI.setPosition(size.width * 0.2,size.height * 0.65);
@@ -68,13 +72,7 @@ function Game_UI_Mgr(){
 			numUI.setString(--waitTime);
 		};
 
-		parent.schedule(func,1);
-
-		var token = EventCenter.RegisterEvent(EventType.ET_REMOVE_WAIT_UI,function(){
-			parent.unschedule(func);
-			clockUI.removeFromParent();
-			EventCenter.UnregisterEvent(token);
-		});
+		clockUI.schedule(func,1);
 	},
 
 	this.callResultLabel = function(params){
@@ -82,16 +80,16 @@ function Game_UI_Mgr(){
 		var parent = cc.director.getRunningScene();
 
 		var text = '叫地主';
-		var player = PlayerMgr.GetPlayer(params.id);
+		var player = PlayerMgr.GetPlayer(params.player_id);
 		if(!params.is_call){
 			text = "不叫";
 		}
 		var x,y,tag = 'call-ui';
-		if(params.id == 1){
+		if(params.player_id == 1){
 			x = size.width * 0.5,y = size.height * 0.35;
-		}else if(params.id == 2){
+		}else if(params.player_id == 2){
 			x = size.width * 0.8,y = size.height * 0.6;
-		}else if(params.id == 3){
+		}else if(params.player_id == 3){
 			x = size.width * 0.2,y = size.height * 0.6;
 		}
 		var def = this.getLabel2Def();
@@ -106,7 +104,7 @@ function Game_UI_Mgr(){
 	this.robLandlordResult = function(params){
         var size = cc.winSize;
 		var parent = cc.director.getRunningScene();
-		var player = PlayerMgr.GetPlayer(params.id);
+		var player = PlayerMgr.GetPlayer(params.player_id);
 		var text = '抢地主';
 		if(!params.is_rob){
 			text = "不抢";
@@ -118,11 +116,11 @@ function Game_UI_Mgr(){
 		label.setTag(tag);
 		player.setTempUI(tag);
 		parent.addChild(label);
-		if(params.id == 2){
+		if(params.player_id == 2){
 			label.setPosition(size.width * 0.8,size.height * 0.6);
-		}else if(params.id == 3){
+		}else if(params.player_id == 3){
 			label.setPosition(size.width * 0.2,size.height * 0.6);
-		}else if(params.id == 1){
+		}else if(params.player_id == 1){
 			label.setPosition(size.width * 0.5,size.height * 0.35);
 		}
 	},
@@ -160,11 +158,8 @@ function Game_UI_Mgr(){
 			if(type == ccui.Widget.TOUCH_ENDED){
 				callBtn.removeFromParent();
 				noCallBtn.removeFromParent();
-				if(sender.type == 'call'){
-					EventCenter.PublishEvent(EventType.ET_CALL_CARD,{id:1,is_call:true});
-				}else{
-					EventCenter.PublishEvent(EventType.ET_CALL_CARD,{id:1,is_call:false});
-				}
+				var isCall = sender.type == 'call';
+				Game_Event_Center.DispatchEvent(EventType.ET_CALL_LANDLORD,{player_id:1,is_call:isCall});
 			}
 		};
 
@@ -192,9 +187,9 @@ function Game_UI_Mgr(){
 		var callback = function(sender,type){
 			if(type == ccui.Widget.TOUCH_ENDED){
 				var isrob = sender.type == 'rob';
-				EventCenter.PublishEvent(EventType.ET_ROB_LANDLORD,{id:1,is_rob:isrob});
 				robBtn.removeFromParent();
 				noRobBtn.removeFromParent();
+				Game_Event_Center.DispatchEvent(EventType.ET_ROB_LANDLORD,{player_id:1,is_rob:isrob});
 			}
 		};
 
