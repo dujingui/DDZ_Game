@@ -10,15 +10,19 @@ var CardUI = cc.Sprite.extend({
 
 	_isSelected		: null,
 
-	ctor : function(cardData){
+	ctor : function(cardData,isSmall){
 		if(!cardData){
 			var a= 0;
 		}
-		this._super(res.card_panel);
+		if(isSmall){
+			this._super(res.card_panel_small);
+		}else{
+			this._super(res.card_panel);
+		}
 
 		this._init(cardData);
 
-		this._initCardUI(cardData);
+		this._initCardUI(cardData,isSmall);
 		this._initEvent();
 	},
 
@@ -49,37 +53,41 @@ var CardUI = cc.Sprite.extend({
 		}
 	},
 
-	_initCardUI : function(card){
+	_initCardUI : function(card, isSmall){
 		var size = this.getContentSize();
+		var funcName = isSmall ? "ForSmall" : "";
 
-		var cardRect = CardUtil.getCardRect(card.color,card.numID)
-		var cardFileName = CardUtil.getCardFileName(card.color);
+		var cardRect = CardUtil['getCardRect'+funcName](card.color,card.numID)
+		var cardFileName = CardUtil['getCardFileName'+funcName](card.color);
 		var sp = new cc.Sprite(cardFileName,cardRect);
-		var sp1 = new cc.Sprite(cardFileName,cardRect);
-		sp1.setRotation(180);
-		sp1.setPosition(size.width - sp1.getContentSize().width / 2 - 3,sp1.getContentSize().height / 2 + 7);
 		sp.setAnchorPoint(0,1);
 		sp.setPosition(3,size.height - 7);
 		this.addChild(sp);
-		this.addChild(sp1);
 		this._numSprite1 = sp;
-		this._numSprite2 = sp1;
+		if(!isSmall){
+			var sp1 = new cc.Sprite(cardFileName,cardRect);
+			sp1.setRotation(180);
+			sp1.setPosition(size.width - sp1.getContentSize().width / 2 - 3,sp1.getContentSize().height / 2 + 7);
+			this.addChild(sp1);
+			this._numSprite2 = sp1;
+		}
 
-		var colorUIFileName = CardUtil.getCardColorFileName(card.color);
+		var colorUIFileName = CardUtil['getCardColorFileName'+funcName](card.color);
 		if(colorUIFileName){
-			var colorUIRect = CardUtil.getCardColorRect(card.color);
+			var colorUIRect = CardUtil['getCardColorRect'+funcName](card.color);
 			var colorSp = new cc.Sprite(colorUIFileName,colorUIRect);
-			var colorSp1 = new cc.Sprite(colorUIFileName,colorUIRect);
-			colorSp1.setRotation(180);
-			colorSp1.setPosition(size.width - colorSp1.getContentSize().width / 2 - 3,sp1.getContentSize().height + colorSp1.getContentSize().height / 2 + 7);
 			colorSp.setAnchorPoint(0,1);
 			colorSp.setPosition(5,sp.getPositionY() - sp.getContentSize().height);
-
 			this._colorSprite1	= colorSp,
-			this._colorSprite2 	= colorSp1,
-
 			this.addChild(colorSp);
-			this.addChild(colorSp1);
+
+			if(!isSmall){
+				var colorSp1 = new cc.Sprite(colorUIFileName,colorUIRect);
+				colorSp1.setRotation(180);
+				colorSp1.setPosition(size.width - colorSp1.getContentSize().width / 2 - 3,sp1.getContentSize().height + colorSp1.getContentSize().height / 2 + 7);
+				this._colorSprite2 	= colorSp1,
+				this.addChild(colorSp1);
+			}
 		}
 	},
 

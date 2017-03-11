@@ -41,6 +41,7 @@ function Game_UI_Mgr(){
 			if(tempUI){
 				var parent = cc.director.getRunningScene();
 				parent.removeChildByTag(tempUI);
+				player.setTempUI(null);
 			}
 		}
 	},
@@ -159,7 +160,10 @@ function Game_UI_Mgr(){
 				callBtn.removeFromParent();
 				noCallBtn.removeFromParent();
 				var isCall = sender.type == 'call';
-				Game_Event_Center.DispatchEvent(EventType.ET_CALL_LANDLORD,{player_id:1,is_call:isCall});
+				Game_Event_Center.DispatchEvent(
+					EventType.ET_CALL_OR_NOT_LANDLORD,
+					{player_id:1,is_call:isCall}
+				);
 			}
 		};
 

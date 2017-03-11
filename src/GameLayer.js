@@ -35,24 +35,35 @@ var GameLayer = cc.Layer.extend({
 	_initEvent : function(){
 		var _this = this;
 
+		//开始叫地主
 		Game_Notify_Center.Subscribe(ObserverType.OT_START_CALL_CARD,function(params){
 			_this._startCallCard(params.player_id);
 		});
 		Game_Notify_Center.Subscribe(ObserverType.OT_AI_WAIT,function(params){
 			_this._aiWait(params.player_id);
 		});
+		//开始抢地主
 		Game_Notify_Center.Subscribe(ObserverType.OT_START_ROB_LANDLORD,function(params){
-			_this._startRobLandlord();
+			_this._startRobLandlord(params.player_id);
 		});
+		//抢地主
 		Game_Notify_Center.Subscribe(ObserverType.OT_ROB_LANDLORD,function(params){
 			_this._robLandlord(params.player_id,params.is_rob,params.cards);
+		});
+		//叫地主
+		Game_Notify_Center.Subscribe(ObserverType.OT_CALL_LANDLORD,function(params){
+			_this._callLandlord(params.player_id,params.is_call);
+		})
+		//成为地主
+		Game_Notify_Center.Subscribe(ObserverType.OT_BECOME_LANDLORD,function(params){
+			_this._becomeLandlord(params);
 		});
 	},
 
 	_initPlayerUI : function(){
 		this._mainPlayer 	= PlayerMgr.CreatePlayer(res.Player_png,false);
-		this._leftPlayer 	= PlayerMgr.CreatePlayer(res.Player_png,true);
 		this._rightPlayer 	= PlayerMgr.CreatePlayer(res.Player_png,true);
+		this._leftPlayer 	= PlayerMgr.CreatePlayer(res.Player_png,true);
 
         var size = cc.winSize;
 
@@ -75,6 +86,7 @@ var GameLayer = cc.Layer.extend({
 
 		var dealSchedule = function(){
 			if(index >= 17){
+				//发牌结束
 				_this.unschedule(dealSchedule);
 				Game_Event_Center.DispatchEvent(EventType.ET_DEAL_OVER);
 				return;
@@ -97,17 +109,57 @@ var GameLayer = cc.Layer.extend({
         var size = cc.winSize;
 
         var player = PlayerMgr.GetPlayer(playerid);
-
-    	Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard);
+        Game_UI_Mgr.RemoveTempUI(playerid);
+        
+        if(player.isAI()){
+        	this._aiWait(playerid)
+        }else{
+    		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard);
+        }
 	},
 
-	_callCard : function(id,iscall){
+	//开始抢地主
+	_startRobLandlord : function(playerid){
+		var player = PlayerMgr.GetPlayer(playerid);
+		Game_UI_Mgr.RemoveTempUI(playerid);
+		if(player.isAI()){
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{player_id:playerid});
+		}else{
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_Rob_Landlord);
+		}
+	},
+
+	//抢地主
+	_robLandlord : function(id,isRob){
 		var player = PlayerMgr.GetPlayer(id);
 
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{id:id,is_call:iscall});
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{id:player.next()});
+		Game_UI_Mgr.RemoveTempUI(id);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{player_id:id,is_rob:isRob});
+		// Game_Event_Center.DispatchEvent(EventType.ET_PLAYER_ROB_OVER,{player_id:id});
+	},
 
-		EventCenter.PublishEvent(EventType.ET_CALL_LANDLORD,{player_id:id});
+	//叫地主
+	_callLandlord : function(id,iscall){
+		var player = PlayerMgr.GetPlayer(id);
+
+		Game_UI_Mgr.RemoveTempUI(id);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{player_id:id,is_call:iscall});
+	},
+
+	//成为地主
+	_becomeLandlord : function(params){
+		var playerid = params.player_id;
+		var bottomCards = params.cards;
+		var player = PlayerMgr.GetPlayer(playerid);
+		if(player.isAI()){
+			this._dealBottomCard(playerid,bottomCards);
+		}else{
+			this._dealBottomCard(playerid,bottomCards);
+			Game_UI_Mgr.RemoveAllTempUI();
+		}
+		var flipped = player.isFlippedX();
+		player.initWithFile(res.landlord_png);
+		player.setFlippedX(flipped);
 	},
 
 	_updateCardUI : function(id,index){
@@ -160,29 +212,6 @@ var GameLayer = cc.Layer.extend({
 		return cardui;
 	},
 
-	_startRobLandlord : function(){
-		Game_UI_Mgr.RemoveTempUI(1);
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_Rob_Landlord);
-	},
-
-	_robLandlord : function(id,isRob,cards){
-		var player = PlayerMgr.GetPlayer(id);
-
-		if(!player.isAI()){
-			if(isRob){
-				this._dealBottomCard(id,cards);
-			}else{
-
-			}
-			Game_UI_Mgr.RemoveAllTempUI();
-			return;
-		}
-
-		Game_UI_Mgr.RemoveTempUI(id);
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{player_id:id,is_rob:isRob});
-		Game_Event_Center.DispatchEvent(EventType.ET_PLAYER_ROB_OVER,{player_id:id});
-	},
-
 	_setCardUIOrder : function(){
 		var cardList = this._mainPlayer.getCardList();
 		var cardMgr = Game_Rules.GetCardMgr();
@@ -194,8 +223,50 @@ var GameLayer = cc.Layer.extend({
 	},
 
 	_dealBottomCard : function(id,cards){
-		var cardList = this._mainPlayer.getCardList();
+		var _this = this;
+		var player = PlayerMgr.GetPlayer(id);
+
 		var cardMgr = Game_Rules.GetCardMgr();
+
+		var offset = 40;
+		var node = new cc.Node();
+		node.setPosition(cc.winSize.width * 0.5, cc.winSize.height * 0.5);
+		this.addChild(node);
+		node.setVisible(false);
+		for(var i = 0;i < cards.length;i ++){
+			var cardid = cards[i];
+			var cardData = cardMgr.getCardData(cardid);
+			var cardui = new CardUI(cardData,true);
+			cardui.setPosition(i*offset,0);
+			node.addChild(cardui);
+		}
+
+		var showBottomCard = function(){
+			node.setScale(0);
+			node.setPosition(cc.winSize.width * 0.5,cc.winSize.height - 50);
+			node.runAction(cc.sequence(cc.scaleTo(0.1,1)));
+		}
+
+		if(player.isAI()){
+			node.setVisible(true);
+			var pos = null;
+			if(id == 2){
+				pos = this._rightCardUI.getPosition();
+			}else{
+				pos = this._leftCardUI.getPosition();
+			}
+			node.runAction(cc.sequence(cc.spawn(cc.moveTo(1,pos),cc.scaleTo(1,0)),cc.callFunc(function(){
+				if(id == 2){
+					_this._rightCardNum.setString(20);
+				}else{
+					_this._leftCardNum.setString(20);
+				}
+				showBottomCard();
+			})));
+			return;
+		}
+
+		var cardList = this._mainPlayer.getCardList();
 
 		for(var i = 0;i < cards.length;i ++){
 			var cardData = cardMgr.getCardData(cards[i]);
@@ -217,7 +288,10 @@ var GameLayer = cc.Layer.extend({
 			this.addChild(cardUI);
 			this._cardUIList.splice(index,0,cardUI);
 
-			cardUI.runAction(cc.sequence(cc.delayTime(0.7),cc.moveBy(0.4,0,-100)));
+			cardUI.runAction(cc.sequence(cc.delayTime(0.7),cc.moveBy(0.4,0,-100),cc.callFunc(function(){
+				showBottomCard();
+				node.setVisible(true);
+			})));
 		}
 
 		this._setCardUIOrder();
