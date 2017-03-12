@@ -20,6 +20,7 @@
         "src/NotifyCenter.js",
         "src/Util.js",
         "src/Card.js",
+        "src/CardTypeGroup.js",
         "src/UIManager.js",
         "src/CardManager.js",
         "src/PlayerMgr.js",
