@@ -5,8 +5,11 @@ var Player = cc.Sprite.extend({
 	_isAI 		: null,
 	_isCall		: null,	//是否叫了地主
 	_id			: null,
+	_isSplit	: null,//拆牌标记
 	_isRob		: null, //是否抢了地主
 	_isLandlord	: null, //是否是地主
+
+	_cardTypeGroups : null,	//牌型组
 
 	_tempUI 	: null,
 
@@ -14,6 +17,7 @@ var Player = cc.Sprite.extend({
 		this._super(fileName);
 
 		this._isAI = isAI;
+		this._cardTypeGroups = new CardTypeGroup();
 
 		this.init();
 	},
@@ -22,12 +26,24 @@ var Player = cc.Sprite.extend({
 		this._cardList = [];
 	},
 
+	setIsSplit : function(isSplit){
+		this._isSplit =isSplit;
+	},
+
+	isSplit : function(){
+		return this._isSplit;
+	},
+
 	setID : function(id){
 		this._id = id;
 	},
 
 	getID : function(){
 		return this._id;
+	},
+
+	getCardTypeGroup : function(){
+		return this._cardTypeGroups;
 	},
 
 	setIsAI : function(isAI){
@@ -40,6 +56,18 @@ var Player = cc.Sprite.extend({
 
 	getCardList : function(){
 		return this._cardList;
+	},
+
+	//出牌
+	discard : function(cards){
+		for(var i = 0; i< cards.length; i++){
+			for(var j = 0; j < this._cardList.length; j++){
+				if(cards[i] === this._cardList[j]){
+					this._cardList.splice(j, 1);
+					break;
+				}
+			}
+		}
 	},
 
 	getCardSoleID : function(index){

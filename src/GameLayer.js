@@ -58,6 +58,14 @@ var GameLayer = cc.Layer.extend({
 		Game_Notify_Center.Subscribe(ObserverType.OT_BECOME_LANDLORD,function(params){
 			_this._becomeLandlord(params);
 		});
+		//开始出牌
+		Game_Notify_Center.Subscribe(ObserverType.OT_START_DISCARD,function(params){
+			_this._startDiscard(params);
+		});
+		//出牌
+		Game_Notify_Center.Subscribe(ObserverType.OT_DISCARD,function(params){
+			_this._discard(params);
+		});
 	},
 
 	_initPlayerUI : function(){
@@ -99,14 +107,12 @@ var GameLayer = cc.Layer.extend({
 
 	//显示ai等待UI
 	_aiWait : function(id){
-
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{player_id:id});
 	},
 
 	//开始叫牌
 	_startCallCard : function(playerid){
 		var _this = this;
-        var size = cc.winSize;
 
         var player = PlayerMgr.GetPlayer(playerid);
         Game_UI_Mgr.RemoveTempUI(playerid);
@@ -151,15 +157,37 @@ var GameLayer = cc.Layer.extend({
 		var playerid = params.player_id;
 		var bottomCards = params.cards;
 		var player = PlayerMgr.GetPlayer(playerid);
+		Game_UI_Mgr.RemoveAllTempUI();
 		if(player.isAI()){
 			this._dealBottomCard(playerid,bottomCards);
 		}else{
 			this._dealBottomCard(playerid,bottomCards);
-			Game_UI_Mgr.RemoveAllTempUI();
 		}
 		var flipped = player.isFlippedX();
 		player.initWithFile(res.landlord_png);
 		player.setFlippedX(flipped);
+	},
+
+	//开始出牌
+	_startDiscard : function(params){
+		var playerid = params.player_id;
+        var player = PlayerMgr.GetPlayer(playerid);
+
+        Game_UI_Mgr.RemoveTempUI(playerid);
+        
+        if(player.isAI()){
+        	this._aiWait(playerid)
+        }else{
+        }
+	},
+
+	//出牌
+	_discard : function(params){
+		//////////////////////////////////////////////////////////////////////////////////
+		///
+		///该写这里了
+		///
+		///////////////////////////////////////////////////////////////////////////////
 	},
 
 	_updateCardUI : function(id,index){
@@ -244,7 +272,9 @@ var GameLayer = cc.Layer.extend({
 		var showBottomCard = function(){
 			node.setScale(0);
 			node.setPosition(cc.winSize.width * 0.5,cc.winSize.height - 50);
-			node.runAction(cc.sequence(cc.scaleTo(0.1,1)));
+			node.runAction(cc.sequence(cc.scaleTo(0.1,1),cc.callFunc(function(){
+				Game_Event_Center.DispatchEvent(EventType.ET_CALL_CARD_OVER);
+			})));
 		}
 
 		if(player.isAI()){

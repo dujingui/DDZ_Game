@@ -32,6 +32,16 @@ function PlayerMgr(){
 		return null;
 	},
 
+	//获得成为地主的玩家
+	this.GetLandlordPlayer = function(){
+		for(var i = 0;i < 3;i ++){
+			if(this.players[i].isLandlord()){
+				return this.players[i].getID();
+			}
+		}
+		return -1;
+	},
+
 	//有没有玩家抢地主
 	this.IsRob = function(){
 		for(var i = 0;i < 3;i ++){
