@@ -11,3 +11,7 @@ CardDef.CardColor = {
 	CC_DigJoker 	: 4,	//大王
 	CC_SmallJoker 	: 5 	//小王
 };
+
+CardDef.CardPatterns = {
+	CCP_Single 		: 0,	//单牌
+};

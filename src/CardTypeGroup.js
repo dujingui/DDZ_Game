@@ -1,13 +1,13 @@
 //牌型组
 var CardTypeGroup = function(){
 
-	this.singleCardGroups = [];		//单牌组
-	this.sigleStraightGroups = [];	//单顺组
-	this.doubleCardGroups = [];		//双牌组
-	this.doubleStraightGroups = [];		//双牌组
-	this.threeAndOneGroups = []; //3带1组
-	this.bombGroups = [];	//炸弹组
-	this.rocketGroups = [];//火箭组
+	this.singleCardGroups 		= null;		//单牌组
+	this.sigleStraightGroups 	= null;		//单顺组
+	this.doubleCardGroups 		= null;		//双牌组
+	this.doubleStraightGroups 	= null;		//双牌组
+	this.threeAndOneGroups 		= null; 	//3带1组
+	this.bombGroups 			= null;		//炸弹组
+	this.rocketGroups 			= null;		//火箭组
 
 	this.setSigleCardGroups = function(groups){
 		this.singleCardGroups = groups;
@@ -17,10 +17,25 @@ var CardTypeGroup = function(){
 		return this.singleCardGroups;
 	},
 
+	this.discard = function(type, index){
+		var cards = null;
+		switch(type){
+			case CardDef.CardPatterns.CCP_Single:
+			{
+				cards = this.singleCardGroups.splice(index, 1);
+				break;
+			}
+			default:
+				break;
+		}
+		return cards[0];
+	},
+
+	//从单牌组获得最小的一张单牌
 	this.getSigleCard = function(){
 		if(this.singleCardGroups.length > 0){
 			var sigleCard = this.singleCardGroups.splice(0, 1);
-			return sigleCard;
+			return sigleCard[0];
 		}
 		return null;
 	},

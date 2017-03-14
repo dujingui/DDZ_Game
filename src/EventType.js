@@ -5,6 +5,7 @@ var EventType = {
 	ET_DEAL_OVER 			: 'deal_over',		//发牌结束
 	ET_CALL_OR_NOT_LANDLORD	: 'call_landlord',	//叫或者不叫地主
 	ET_ROB_LANDLORD			: 'rob_landlord',	//抢地主
-	ET_CALL_CARD_OVER		: '叫牌结束',		//叫牌结束
-	// ET_PLAYER_ROB_OVER		: 'player_rob_over',//某个玩家抢地主结束
+	ET_CALL_CARD_OVER		: 'call_over',		//叫牌结束
+	ET_DISCARD 				: 'discard',		//某个玩家出牌了
+	ET_NOT_DISCARD 			: 'not_discard',	//某个玩家不出牌
 };

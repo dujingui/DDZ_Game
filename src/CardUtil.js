@@ -1,5 +1,56 @@
 
 var CardUtil = {
+	//判断array数组是否包含于numid相同的牌
+	isContain : function(array,numid){
+		for(var i = 0;i < array.length;i ++){
+			var cardData = Game_Card_Mgr.getCardData(array[i]);
+			if(cardData.numID === numid){
+				return true;
+			}
+		}
+		return false;
+	},
+
+	//对牌型组进行从大到小的排序
+	sortCardGroup : function(group){
+		for(var i = 0;i < group.length;i ++){
+			for(var j = i + 1; j< group.length; j++){
+				var carddata1 = Game_Card_Mgr.getCardData(group[i][0]);
+				var carddata2 = Game_Card_Mgr.getCardData(group[j][0]);
+				if(carddata1.value > carddata2.value){
+					var temp = group[i];
+					group[i] = group[j];
+					group[j] = temp;
+				}
+			}
+		}
+	},
+
+	//从array数组中移除一个numid相同的元素
+	removeEleByNumID : function(array, numid){
+		for(var i = 0;i < array.length;i ++){
+			var soleID = array[i];
+			var cardData = Game_Card_Mgr.getCardData(soleID);
+			if(cardData.numID === numid){
+				array.splice(i,1);
+				return soleID;
+			}
+		}
+		return -1;
+	},
+
+	//合并两个数组
+	mergeArray : function(array1,array2){
+		var newArray = [];
+		for(var i = 0;i < array1.length;i ++){
+			newArray.push(array1[i]);
+		}
+		for(var i = 0;i < array2.length;i ++){
+			newArray.push(array2[i]);
+		}
+		return newArray;
+	}，
+
 	getCardRect : function(color,numid){
 		var rect = null;
 		if(color === CardDef.CardColor.CC_DigJoker){

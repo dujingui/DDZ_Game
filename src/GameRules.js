@@ -9,11 +9,8 @@ function GameRules(){
 
 	this.instance = this;
 
-	this.isRobFag 	= false;	//抢地主标记位
-	this.firstRob   = null; 	//首次抢地主的玩家
+	this.isRobFag 	= false;	//首次抢地主标记位
 	this.CardNum 	= 54;
-
-	this._cardMgr 	= new CardManager();
 
 	this.Init = function(){
 		this.initEvent();
@@ -29,16 +26,16 @@ function GameRules(){
 		var cardid = null;
 		var playerIndex = 0;
 		//生成一副牌
-		this._cardMgr.createCards();
+		Game_Card_Mgr.createCards();
 		//洗牌
-		this._cardMgr.shuffle();
+		Game_Card_Mgr.shuffle();
 
 		//发牌
 		for(var i = 0;i < this.CardNum - 3;i ++){
 			if(playerIndex >= 3){
 				playerIndex = 0;
 			}
-			cardid = this._cardMgr.getSoleIDByIndex(i);
+			cardid = Game_Card_Mgr.getSoleIDByIndex(i);
 			tempPlayer = PlayerMgr.GetPlayerByIndex(playerIndex ++);
 			tempPlayer.deal(cardid);
 		}
@@ -46,85 +43,15 @@ function GameRules(){
 		//牌排序
 		for(var i = 0;i < 3;i ++){
 			tempPlayer = PlayerMgr.GetPlayerByIndex(i);
-			this._cardMgr.sort(tempPlayer.getCardList());
+			Game_Card_Mgr.sort(tempPlayer.getCardList());
 		}
-	},
-
-	this.FirstRobPlayer = function(){
-		return this.firstRob;
-	},
-
-	this.GetCardData = function(id){
-		var cardData = this._cardMgr.getCardData(id);
-		return cardData;
-	},
-
-	this.GetCardMgr = function(){
-		return this._cardMgr;
-	},
-
-	//每帧刷新
-	this.Update = function(){
-
 	},
 
 	//设置某个玩家为地主
 	this.setLandlord = function(playerid){
 		var player = PlayerMgr.GetPlayer(playerid);
 		player.setLandlord(true);
-		var cards = this.getBottomCard();
-		Game_Notify_Center.Publish(ObserverType.OT_BECOME_LANDLORD,{player_id:playerid,cards:cards});
-	},
-
-	//判断array数组是否包含于numid相同的牌
-	this.isContain = function(array,numid){
-		for(var i = 0;i < array.length;i ++){
-			var cardData = this.GetCardData(array[i]);
-			if(cardData.numID === numid){
-				return true;
-			}
-		}
-		return false;
-	},
-
-	//合并两个数组
-	this.mergeArray = function(array1,array2){
-		var newArray = [];
-		for(var i = 0;i < array1.length;i ++){
-			newArray.push(array1[i]);
-		}
-		for(var i = 0;i < array2.length;i ++){
-			newArray.push(array2[i]);
-		}
-		return newArray;
-	}
-
-	//对牌型组进行从大到小的排序
-	this.sortCardGroup = function(group){
-		for(var i = 0;i < group.length;i ++){
-			for(var j = i + 1; j< group.length; j++){
-				var carddata1 = this.GetCardData(group[i][0]);
-				var carddata2 = this.GetCardData(group[j][0]);
-				if(carddata1.value > carddata2.value){
-					var temp = group[i];
-					group[i] = group[j];
-					group[j] = temp;
-				}
-			}
-		}
-	},
-
-	//从array数组中移除一个numid相同的元素
-	this.removeEleByNumID = function(array, numid){
-		for(var i = 0;i < array.length;i ++){
-			var soleID = array[i];
-			var cardData = this.GetCardData(soleID);
-			if(cardData.numID === numid){
-				array.splice(i,1);
-				return soleID;
-			}
-		}
-		return -1;
+		Game_Notify_Center.Publish(ObserverType.OT_BECOME_LANDLORD,{player_id:playerid});
 	},
 
 	//如指定参数则指定该参数对应的玩家开始叫牌，否则随机指定一名玩家开始叫牌,
@@ -144,7 +71,7 @@ function GameRules(){
 		//如果叫过地主并且没有玩家抢地主,则直接指定为地主
 		var _this = this;
 		var player = PlayerMgr.GetPlayer(playerid);
-		if(player.isCall() && !this.isHasPlayerRob()){
+		if(player.isCall() && !PlayerMgr.isHasPlayerRob()){
 			player.setLandlord(true);
 			setTimeout(function(){
 				_this.setLandlord(playerid);
@@ -158,29 +85,6 @@ function GameRules(){
 			ObserverType.OT_START_ROB_LANDLORD,
 			{player_id:playerid}
 		);
-	},
-
-	//获得抢过地主的玩家
-	this.getRobPlayers = function(){
-		var players = [];
-		for(var i = 1;i <= 3;i ++){
-			var player = PlayerMgr.GetPlayer(i);
-			if(player.isRob()){
-				players.push(i);
-			}	
-		}	
-		return players;
-	},
-
-	//判断有没有玩家抢过地主
-	this.isHasPlayerRob = function(){
-		for(var i = 1;i <= 3;i ++){
-			var player = PlayerMgr.GetPlayer(i);
-			if(player.isRob()){
-				return true;
-			}
-		}
-		return false;
 	},
 
 	//叫地主
@@ -207,9 +111,9 @@ function GameRules(){
 			if(isRob){
 				playerid = id;
 			}else{
-				var players = this.getRobPlayers();
+				var players = PlayerMgr.getRobPlayers();
 				if(players.length >=2){
-					playerid = this.FirstRobPlayer();
+					playerid = PlayerMgr.GetFirstRobPlayer();
 				}else{
 					playerid = players[0];
 				}
@@ -218,6 +122,36 @@ function GameRules(){
 		}else{
 			this.startRobLandlord(player.next());
 		}
+	},
+
+	//有人出牌
+	this.playerDiscard = function(params){
+		var player = PlayerMgr.GetPlayer(params.player_id);
+		var nextPlayer = player.nextPlayer();
+
+		if(nextPlayer.isAI()){
+			this.calcFollowSuit(params.discard_info,nextPlayer.getID());
+		}
+
+		Game_Notify_Center.Publish(
+			ObserverType.OT_START_FOLLOW_CARD,
+			{player_id:nextPlayer.getID()}
+		);
+	},
+
+	//有人不出牌
+	this.notDiscard = function(params){
+		var player = PlayerMgr.GetPlayer(params.player_id);
+		var nextPlayer = player.nextPlayer();
+
+		if(nextPlayer.isAI()){
+			this.calcFollowSuit(params.discard_info,nextPlayer.getID());
+		}
+
+		Game_Notify_Center.Publish(
+			ObserverType.OT_START_FOLLOW_CARD,
+			{player_id:nextPlayer.getID()}
+		);
 	},
 
 	//拆牌
@@ -242,18 +176,18 @@ function GameRules(){
 		var cardList_4 = [];
 
 		for(var i = 0;i < cards.length;){
-			var cardData = this.GetCardData(cards[i]);
+			var cardData = Game_Card_Mgr.getCardData(cards[i]);
 			var cardNumID = cardData.numID;
-			if(!this.isContain(cardList_1,cardNumID)){
+			if(!CardUtil.isContain(cardList_1,cardNumID)){
 				cardList_1.push(cardData.soleID);
 				cards.splice(i,1);
-			}else if(!this.isContain(cardList_2,cardNumID)){
+			}else if(!CardUtil.isContain(cardList_2,cardNumID)){
 				cardList_2.push(cardData.soleID);
 				cards.splice(i,1);
-			}else if(!this.isContain(cardList_3,cardNumID)){
+			}else if(!CardUtil.isContain(cardList_3,cardNumID)){
 				cardList_3.push(cardData.soleID);
 				cards.splice(i,1);
-			}else if(!this.isContain(cardList_4,cardNumID)){
+			}else if(!CardUtil.isContain(cardList_4,cardNumID)){
 				cardList_4.push(cardData.soleID);
 				cards.splice(i,1);
 			}
@@ -270,12 +204,12 @@ function GameRules(){
 		//首先提取炸弹
 		for(var i = 0;i < cardList_4.length; ){
 			var cardSoleID = cardList_4[i];
-			var numID = this.GetCardData(cardSoleID).numID;
+			var numID = Game_Card_Mgr.getCardData(cardSoleID).numID;
 			cardList_4.splice(i,1);
 
-			var soleID3 = this.removeEleByNumID(cardList_3,numID);
-			var soleID2 = this.removeEleByNumID(cardList_2,numID);
-			var soleID1 = this.removeEleByNumID(cardList_1,numID);
+			var soleID3 = CardUtil.removeEleByNumID(cardList_3,numID);
+			var soleID2 = CardUtil.removeEleByNumID(cardList_2,numID);
+			var soleID1 = CardUtil.removeEleByNumID(cardList_1,numID);
 
 			var bombGroup = [];
 			bombGroup.push(soleID1, soleID2, soleID3, cardSoleID);
@@ -284,11 +218,11 @@ function GameRules(){
 		//再提取3牌组
 		for(var i = 0;i < cardList_3.length;){
 			var cardSoleID = cardList_3[i];
-			var numID = this.GetCardData(cardSoleID).numID;
+			var numID = Game_Card_Mgr.getCardData(cardSoleID).numID;
 			cardList_3.splice(i,1);
 
-			var soleID2 = this.removeEleByNumID(cardList_2,numID);
-			var soleID1 = this.removeEleByNumID(cardList_1,numID);
+			var soleID2 = CardUtil.removeEleByNumID(cardList_2,numID);
+			var soleID1 = CardUtil.removeEleByNumID(cardList_1,numID);
 			var threeGroup = [];
 			threeGroup.push(soleID1, soleID2, cardSoleID);
 			threeGroups.push(threeGroup);
@@ -296,18 +230,18 @@ function GameRules(){
 		//再提取2牌组
 		for(var i = 0;i < cardList_2.length;){
 			var cardSoleID = cardList_2[i];
-			var numID = this.GetCardData(cardSoleID).numID;
+			var numID = Game_Card_Mgr.getCardData(cardSoleID).numID;
 			cardList_2.splice(i,1);
 
-			var soleID1 = this.removeEleByNumID(cardList_1,numID);
+			var soleID1 = CardUtil.removeEleByNumID(cardList_1,numID);
 			var doubleGroup = [];
 			doubleGroup.push(soleID1, cardSoleID);
 			doubleGroups.push(doubleGroup);
 		}
 		//再提取火箭
-		if(this.isContain(cardList_1, 14) && this.isContain(cardList_1, 15)){
-			this.removeEleByNumID(cardList_1, 14);
-			this.removeEleByNumID(cardList_1, 15);
+		if(CardUtil.isContain(cardList_1, 14) && CardUtil.isContain(cardList_1, 15)){
+			CardUtil.removeEleByNumID(cardList_1, 14);
+			CardUtil.removeEleByNumID(cardList_1, 15);
 			var rocketGroup = [];
 			rocketGroup.push(53, 54);
 			rocketGroups.push(rocketGroup);
@@ -315,7 +249,7 @@ function GameRules(){
 		//再提取单牌组
 		for(var i = 0;i < cardList_1.length;){
 			var cardSoleID = cardList_1[i];
-			var numID = this.GetCardData(cardSoleID);
+			var numID = Game_Card_Mgr.getCardData(cardSoleID);
 			cardList_1.splice(i,1);
 
 			var singleGroup = [];
@@ -323,10 +257,10 @@ function GameRules(){
 			singleGroups.push(singleGroup);
 		}
 		//对牌型组进行排序(从小到大)
-		this.sortCardGroup(bombGroups);
-		this.sortCardGroup(threeGroups);
-		this.sortCardGroup(doubleGroups);
-		this.sortCardGroup(singleGroups);
+		CardUtil.sortCardGroup(bombGroups);
+		CardUtil.sortCardGroup(threeGroups);
+		CardUtil.sortCardGroup(doubleGroups);
+		CardUtil.sortCardGroup(singleGroups);
 
 		var count = 1;
 		var tempArr = [];
@@ -335,8 +269,8 @@ function GameRules(){
 		for(var i = 0;i < singleGroups.length - 1;i ++){
 			var card1 = singleGroups[i][0];
 			var card2 = singleGroups[i+1][0];
-			var numid1 = this.GetCardData(card1).numID;
-			var numid2 = this.GetCardData(card2).numID;
+			var numid1 = Game_Card_Mgr.getCardData(card1).numID;
+			var numid2 = Game_Card_Mgr.getCardData(card2).numID;
 			if(numid1 === (numid2 - 1)){
 				count ++;
 			}else{
@@ -354,7 +288,7 @@ function GameRules(){
 		for(var i = 0;i < threeGroups.length;){
 			var three = threeGroups.splice(i,1)[0];
 			var one = singleGroups.splice(i,1)[0];
-			var threeAndOne = this.mergeArray(three,one);
+			var threeAndOne = CardUtil.mergeArray(three,one);
 			threeAndOneGroups.push(threeAndOne);
 		}
 
@@ -388,25 +322,68 @@ function GameRules(){
 		},1000);
 
 		if(isRob && !this.isRobFag){
-			this.firstRob = id;
+			PlayerMgr.SetFirstRobPlayer(id);
 			this.isRobFag = true;
 		}
 		player.setIsRob(isRob);
 	},
 
 	//计算如何出牌 AI使用
-	this.calcHowDiscard = function(id){
+	this.calcDiscard = function(id){
 		var player = PlayerMgr.GetPlayer(id);
 		if(!player.isSplit()){
 			this.splitCards(id);
 		}
 		var cardsGroup = player.getCardTypeGroup();
 		var cards = cardsGroup.getSigleCard();
+		var cardType = null;
 		if(cards){
 			player.discard(cards);
+			cardType = CardDef.CardPatterns.CCP_Single;
 		}
+		var discardInfo = {
+			card_type: cardType,
+			cards : cards
+		};
 		setTimeout(function(){
-			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{cards:cards,player_id:id});
+			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{discard_info:discardInfo,player_id:id});
+		},2000);
+	},
+
+	//计算如何跟牌 AI使用
+	this.calcFollowSuit = function(discard_info,id){
+		var player = PlayerMgr.GetPlayer(id);
+		if(!player.isSplit()){
+			this.splitCards(id);
+		}
+		var cardTypeGroup = player.getCardTypeGroup();
+		var cards = null;
+		var type = null;
+		var cardType = discard_info.card_type;
+		var cardNumID = discard_info.cards[0];
+		if(cardType === CardDef.CardPatterns.CCP_Single){
+			var singleGroups = cardTypeGroup.getSigleCardGroups();
+			for(var i = 0;i < singleGroups.length;i ++){
+				var cardSoleID = singleGroups[i][0];
+				var cardData = Game_Card_Mgr.getCardData(cardSoleID);
+				if(cardData.numID > cardNumID){
+					cards = cardTypeGroup.discard(CardDef.CardPatterns.CCP_Single,i);
+					type = CardDef.CardPatterns.CCP_Single;
+					break;
+				}
+			}
+		}
+
+		var newDiscardInfo = {
+			cards:cards,
+			card_type:type
+		};
+
+		setTimeout(function(){
+			Game_Notify_Center.Publish(
+				ObserverType.OT_FOLLOW_CARD,
+				{player_id:id,discard_info:newDiscardInfo}
+			);
 		},2000);
 	},
 
@@ -419,15 +396,9 @@ function GameRules(){
 		var player = PlayerMgr.GetPlayer(landlordID);
 
 		if(player.isAI()){
-			this.calcHowDiscard(landlordID);
+			this.calcDiscard(landlordID);
 		}
 		Game_Notify_Center.Publish(ObserverType.OT_START_DISCARD,{player_id:landlordID});
-	},
-
-	//获取3张底牌
-	this.getBottomCard = function(landlordID){
-		var cards = this._cardMgr.getBottomCard();
-		return cards;
 	},
 
 	this.initEvent = function(){
@@ -435,7 +406,6 @@ function GameRules(){
 		//开始游戏
 		Game_Event_Center.RegisterEvent(EventType.ET_START_GAME,function(){
 			_this.startGame();
-			// _this.splitCards();
 		});
 		//发牌
 		Game_Event_Center.RegisterEvent(EventType.ET_DEAL,function(){
@@ -456,6 +426,14 @@ function GameRules(){
 		//叫牌结束
 		Game_Event_Center.RegisterEvent(EventType.ET_CALL_CARD_OVER,function(params){
 			_this.callCardOver(params);
+		});
+		//某个玩家出牌了
+		Game_Event_Center.RegisterEvent(EventType.ET_DISCARD,function(params){
+			_this.playerDiscard(params);
+		});
+		//某个玩家不出牌
+		Game_Event_Center.RegisterEvent(EventType.ET_NOT_DISCARD,function(params){
+			_this.notDiscard(params);
 		});
 	}
 

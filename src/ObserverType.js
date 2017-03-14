@@ -8,4 +8,6 @@ var ObserverType = {
 	OT_BECOME_LANDLORD		: 'become_landlord',//成为地主
 	OT_START_DISCARD		: 'start_discard',//开始出牌
 	OT_DISCARD 				: 'discard',//出牌
+	OT_START_FOLLOW_CARD 	: 'start_follow_card',//出牌
+	OT_FOLLOW_CARD 			: 'follow_card',//出牌
 };

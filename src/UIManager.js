@@ -3,8 +3,10 @@ var Game_UI_Type = {
 	GUT_Self_CallCard 			: 'selfCallCard',//自己叫牌UI
 	GUT_AI_Wait            		: 'aiWait',		//AI等待UI
 	GUT_CALL_RESULT_LABEL		: 'callResultLabel', //叫牌结果文字
-	GUT_Self_Rob_Landlord		: 'selfRobLandlord', //叫牌结果文字
-	GUT_ROB_RESULT_LABEL		: 'robLandlordResult'//抢地主结果文字
+	GUT_Self_Rob_Landlord		: 'selfRobLandlord', //自己抢地主UI
+	GUT_ROB_RESULT_LABEL		: 'robLandlordResult',//抢地主结果文字
+	GUT_DISCARD_RESULT 			: 'discardResult',//出牌结果
+	GUI_SELF_DISCARD            : 'selfDiscard', //出牌UI
 };
 
 function Game_UI_Mgr(){
@@ -44,6 +46,44 @@ function Game_UI_Mgr(){
 				player.setTempUI(null);
 			}
 		}
+	},
+
+	this.discardResult = function(params){
+		var cards = params.discard_info.cards;
+		var size = cc.winSize;
+		var playerid = params.player_id;
+		var player = PlayerMgr.GetPlayer(playerid);
+		var parent = cc.director.getRunningScene();
+		var initPosX,initPosY;
+		var node = new cc.Node();
+		var cardSize = cc.size(56, 75);
+		var offset = 30;
+		var count = 0;
+		for(var i = 0;i < cards.length;i ++){
+			// var cardGroup = cards[i];
+			// for(var j = 0;j < cardGroup.length;j ++){
+				// var cardSoleID = cardGroup[j];
+				var cardSoleID = cards[i];
+				var cardData = Game_Rules.GetCardData(cardSoleID);
+				var cardui = new CardUI(cardData, true);
+				cardui.setPosition(i * offset, 0);
+				node.addChild(cardui);
+				count ++;
+			// }
+		}
+		var allCardWidth = (count - 1) * offset + cardSize.width;
+		if(playerid === 1){
+			initPosX = size.width / 2 - allCardWidth / 2;
+			initPosY = size.height * 0.4;
+		}else if(playerid == 2){
+			initPosX = size.width * 0.8 - allCardWidth;
+			initPosY = size.height * 0.6;
+		}else if(playerid == 3){
+			initPosX = size.width * 0.2;
+			initPosY = size.height * 0.6;
+		}
+		node.setPosition(initPosX,initPosY);
+		parent.addChild(node);
 	},
 
 	this.aiWait = function(params){
@@ -124,6 +164,49 @@ function Game_UI_Mgr(){
 		}else if(params.player_id == 1){
 			label.setPosition(size.width * 0.5,size.height * 0.35);
 		}
+	},
+
+	this.selfDiscard = function(params){
+		var def = this.getLabelDef();
+		var size = cc.winSize;
+		var parent = cc.director.getRunningScene();
+		var notBtn = new ccui.Button(res.normal_btn,res.press_btn);
+		var hintBtn = new ccui.Button(res.normal_btn,res.press_btn);
+		var discardBtn = new ccui.Button(res.normal_btn,res.press_btn);
+		var notLabel = new cc.LabelTTF("不出",def);
+		var hintLabel = new cc.LabelTTF("提示",def);
+		var discardLabel = new cc.LabelTTF("出牌",def);
+		var btnsize = notBtn.getContentSize();
+		notLabel.setAnchorPoint(0.5,0.5);
+		hintLabel.setAnchorPoint(0.5,0.5);
+		discardLabel.setAnchorPoint(0.5,0.5);
+		notLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
+		hintLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
+		discardLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
+		notBtn.addChild(notLabel);
+		hintBtn.addChild(hintLabel);
+		discardBtn.addChild(discardLabel);
+		notBtn.setPosition(size.width * 0.3, size.height * 0.4);
+		hintBtn.setPosition(size.width * 0.5, size.height * 0.4);
+		discardBtn.setPosition(size.width * 0.7, size.height * 0.4);
+		parent.addChild(notBtn);
+		parent.addChild(hintBtn);
+		parent.addChild(discardBtn);
+
+		var callback = function(sender,type){
+			if(type == ccui.Widget.TOUCH_ENDED){
+				notBtn.removeFromParent();
+				hintBtn.removeFromParent();
+				discardBtn.removeFromParent();
+				if(sender == notBtn){
+					Game_Event_Center.DispatchEvent(EventType.ET_NOT_DISCARD,params);
+				}
+			}
+		}
+
+		notBtn.addTouchEventListener(callback);
+		hintBtn.addTouchEventListener(callback);
+		discardBtn.addTouchEventListener(callback);
 	},
 
 	this.selfCallCard = function(params){

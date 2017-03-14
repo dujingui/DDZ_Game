@@ -66,6 +66,14 @@ var GameLayer = cc.Layer.extend({
 		Game_Notify_Center.Subscribe(ObserverType.OT_DISCARD,function(params){
 			_this._discard(params);
 		});
+		//开始跟牌
+		Game_Notify_Center.Subscribe(ObserverType.OT_START_FOLLOW_CARD,function(params){
+			_this._startFollowCard(params);
+		});
+		//跟牌
+		Game_Notify_Center.Subscribe(ObserverType.OT_FOLLOW_CARD,function(params){
+			_this._followCard(params);
+		});
 	},
 
 	_initPlayerUI : function(){
@@ -155,7 +163,7 @@ var GameLayer = cc.Layer.extend({
 	//成为地主
 	_becomeLandlord : function(params){
 		var playerid = params.player_id;
-		var bottomCards = params.cards;
+		var bottomCards = Game_Card_Mgr.getBottomCard();
 		var player = PlayerMgr.GetPlayer(playerid);
 		Game_UI_Mgr.RemoveAllTempUI();
 		if(player.isAI()){
@@ -176,18 +184,41 @@ var GameLayer = cc.Layer.extend({
         Game_UI_Mgr.RemoveTempUI(playerid);
         
         if(player.isAI()){
-        	this._aiWait(playerid)
+        	this._aiWait(playerid);
         }else{
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_SELF_DISCARD);
         }
 	},
 
 	//出牌
 	_discard : function(params){
-		//////////////////////////////////////////////////////////////////////////////////
-		///
-		///该写这里了
-		///
-		///////////////////////////////////////////////////////////////////////////////
+		Game_UI_Mgr.RemoveTempUI(params.player_id);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
+		Game_Event_Center.DispatchEvent(
+			EventType.ET_DISCARD,
+			params
+		);
+	},
+
+	_startFollowCard : function(params){
+		var player = PlayerMgr.GetPlayer(params.player_id);
+
+        Game_UI_Mgr.RemoveTempUI(params.player_id);
+
+		if(player.isAI()){
+        	this._aiWait(params.player_id);
+		}else{
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_SELF_DISCARD,params);
+		}
+	},
+
+	_followCard : function(params){
+		Game_UI_Mgr.RemoveTempUI(params.player_id);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
+		Game_Event_Center.DispatchEvent(
+			EventType.ET_DISCARD,
+			params
+		);
 	},
 
 	_updateCardUI : function(id,index){
@@ -242,10 +273,9 @@ var GameLayer = cc.Layer.extend({
 
 	_setCardUIOrder : function(){
 		var cardList = this._mainPlayer.getCardList();
-		var cardMgr = Game_Rules.GetCardMgr();
 		for(var i = 0;i < this._cardUIList.length;i++){
 			var cardUI = this._cardUIList[i];
-			var order = cardMgr.getCardIndex(cardList,cardUI.getID());
+			var order = Game_Card_Mgr.getCardIndex(cardList,cardUI.getID());
 			cardUI.setLocalZOrder(order);
 		}
 	},
@@ -254,8 +284,6 @@ var GameLayer = cc.Layer.extend({
 		var _this = this;
 		var player = PlayerMgr.GetPlayer(id);
 
-		var cardMgr = Game_Rules.GetCardMgr();
-
 		var offset = 40;
 		var node = new cc.Node();
 		node.setPosition(cc.winSize.width * 0.5, cc.winSize.height * 0.5);
@@ -263,7 +291,7 @@ var GameLayer = cc.Layer.extend({
 		node.setVisible(false);
 		for(var i = 0;i < cards.length;i ++){
 			var cardid = cards[i];
-			var cardData = cardMgr.getCardData(cardid);
+			var cardData = Game_Card_Mgr.getCardData(cardid);
 			var cardui = new CardUI(cardData,true);
 			cardui.setPosition(i*offset,0);
 			node.addChild(cardui);

@@ -183,3 +183,5 @@ function CardManager(){
 		return -1;
 	}
 };
+
+var Game_Card_Mgr = new CardManager();
