@@ -7,6 +7,7 @@ var Game_UI_Type = {
 	GUT_ROB_RESULT_LABEL		: 'robLandlordResult',//抢地主结果文字
 	GUT_DISCARD_RESULT 			: 'discardResult',//出牌结果
 	GUI_SELF_DISCARD            : 'selfDiscard', //出牌UI
+	GUI_NOT_FOLLOW              : 'notFollowUI',//不跟牌UI
 };
 
 function Game_UI_Mgr(){
@@ -59,12 +60,15 @@ function Game_UI_Mgr(){
 		var cardSize = cc.size(56, 75);
 		var offset = 30;
 		var count = 0;
+		if(!cards){
+			var a = 0;
+		}
 		for(var i = 0;i < cards.length;i ++){
 			// var cardGroup = cards[i];
 			// for(var j = 0;j < cardGroup.length;j ++){
 				// var cardSoleID = cardGroup[j];
 				var cardSoleID = cards[i];
-				var cardData = Game_Rules.GetCardData(cardSoleID);
+				var cardData = Game_Card_Mgr.getCardData(cardSoleID);
 				var cardui = new CardUI(cardData, true);
 				cardui.setPosition(i * offset, 0);
 				node.addChild(cardui);
@@ -114,6 +118,30 @@ function Game_UI_Mgr(){
 		};
 
 		clockUI.schedule(func,1);
+	},
+
+	//不跟牌UI
+	this.notFollowUI = function(params){
+        var size = cc.winSize;
+		var parent = cc.director.getRunningScene();
+		var player = PlayerMgr.GetPlayer(params.player_id);
+
+		var text = '不出';
+		var x,y,tag = 'not-follow';
+		if(params.player_id == 1){
+			x = size.width * 0.5,y = size.height * 0.35;
+		}else if(params.player_id == 2){
+			x = size.width * 0.8,y = size.height * 0.6;
+		}else if(params.player_id == 3){
+			x = size.width * 0.2,y = size.height * 0.6;
+		}
+		var def = this.getLabel2Def();
+		var label = new cc.LabelTTF(text,def);
+		label.setAnchorPoint(0.5,0.5);
+		label.setPosition(x,y);
+		label.setTag(tag);
+		parent.addChild(label);
+		player.setTempUI(tag);
 	},
 
 	this.callResultLabel = function(params){
@@ -199,7 +227,7 @@ function Game_UI_Mgr(){
 				hintBtn.removeFromParent();
 				discardBtn.removeFromParent();
 				if(sender == notBtn){
-					Game_Event_Center.DispatchEvent(EventType.ET_NOT_DISCARD,params);
+					Game_Event_Center.DispatchEvent(EventType.ET_NOT_FOLLOW_CARD,params);
 				}
 			}
 		}

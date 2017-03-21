@@ -72,8 +72,8 @@ function CardManager(){
 		cards.push(new Card(CardDef.CardColor.CC_Clubs,11,13,52));
 
 		//大小王
-		cards.push(new Card(CardDef.CardColor.CC_DigJoker,14,14,53));
-		cards.push(new Card(CardDef.CardColor.CC_SmallJoker,15,15,54));
+		cards.push(new Card(CardDef.CardColor.CC_SmallJoker,14,14,53));
+		cards.push(new Card(CardDef.CardColor.CC_DigJoker,15,15,54));
 
 		this._cards = cards;
 

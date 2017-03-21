@@ -140,7 +140,7 @@ function GameRules(){
 	},
 
 	//有人不出牌
-	this.notDiscard = function(params){
+	this.notFollowCards = function(params){
 		var player = PlayerMgr.GetPlayer(params.player_id);
 		var nextPlayer = player.nextPlayer();
 
@@ -299,6 +299,7 @@ function GameRules(){
 		playerGroups.setThreeAndOneGroups(threeAndOneGroups);
 		playerGroups.setBombGroups(bombGroups);
 		playerGroups.setRocketGroups(rocketGroups);
+		// playerGroups.printCards();
 	},
 
 	//计算是否叫牌 AI使用
@@ -334,19 +335,13 @@ function GameRules(){
 		if(!player.isSplit()){
 			this.splitCards(id);
 		}
+
 		var cardsGroup = player.getCardTypeGroup();
-		var cards = cardsGroup.getSigleCard();
-		var cardType = null;
-		if(cards){
-			player.discard(cards);
-			cardType = CardDef.CardPatterns.CCP_Single;
-		}
-		var discardInfo = {
-			card_type: cardType,
-			cards : cards
-		};
+		var descardInfo = cardsGroup.getMinCardInfo();
+
 		setTimeout(function(){
-			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{discard_info:discardInfo,player_id:id});
+			cardsGroup.printCards();
+			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{discard_info:descardInfo,player_id:id});
 		},2000);
 	},
 
@@ -357,32 +352,16 @@ function GameRules(){
 			this.splitCards(id);
 		}
 		var cardTypeGroup = player.getCardTypeGroup();
-		var cards = null;
-		var type = null;
-		var cardType = discard_info.card_type;
-		var cardNumID = discard_info.cards[0];
-		if(cardType === CardDef.CardPatterns.CCP_Single){
-			var singleGroups = cardTypeGroup.getSigleCardGroups();
-			for(var i = 0;i < singleGroups.length;i ++){
-				var cardSoleID = singleGroups[i][0];
-				var cardData = Game_Card_Mgr.getCardData(cardSoleID);
-				if(cardData.numID > cardNumID){
-					cards = cardTypeGroup.discard(CardDef.CardPatterns.CCP_Single,i);
-					type = CardDef.CardPatterns.CCP_Single;
-					break;
-				}
-			}
+		var followCardInfo = cardTypeGroup.getFollowCardInfo(discard_info);
+		var isFollow = true;
+		if(!followCardInfo){
+			isFollow = false;
 		}
-
-		var newDiscardInfo = {
-			cards:cards,
-			card_type:type
-		};
 
 		setTimeout(function(){
 			Game_Notify_Center.Publish(
 				ObserverType.OT_FOLLOW_CARD,
-				{player_id:id,discard_info:newDiscardInfo}
+				{player_id: id, isFollow: isFollow, discard_info:followCardInfo}
 			);
 		},2000);
 	},
@@ -431,9 +410,9 @@ function GameRules(){
 		Game_Event_Center.RegisterEvent(EventType.ET_DISCARD,function(params){
 			_this.playerDiscard(params);
 		});
-		//某个玩家不出牌
-		Game_Event_Center.RegisterEvent(EventType.ET_NOT_DISCARD,function(params){
-			_this.notDiscard(params);
+		//某个玩家不跟牌
+		Game_Event_Center.RegisterEvent(EventType.ET_NOT_FOLLOW_CARD,function(params){
+			_this.notFollowCards(params);
 		});
 	}
 

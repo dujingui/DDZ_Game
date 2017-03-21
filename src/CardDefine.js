@@ -13,5 +13,13 @@ CardDef.CardColor = {
 };
 
 CardDef.CardPatterns = {
-	CCP_Single 		: 0,	//单牌
+	CCP_Single 				: 0,	//单牌
+	CCP_Single_Straight		: 1, 	//单顺
+	CCP_Double 				: 2, 	//对牌
+	CCP_Double_Straight		: 3,	//双顺
+	CCP_ThreeAndOne			: 4,	//3带1
+	CCP_Bomb				: 5,	//炸弹
+	CCP_Rocket				: 6,	//火箭
+
+	CCP_Max					: 7,	//牌型判断
 };

@@ -165,6 +165,7 @@ var GameLayer = cc.Layer.extend({
 		var playerid = params.player_id;
 		var bottomCards = Game_Card_Mgr.getBottomCard();
 		var player = PlayerMgr.GetPlayer(playerid);
+		player.addBottomCards(bottomCards);
 		Game_UI_Mgr.RemoveAllTempUI();
 		if(player.isAI()){
 			this._dealBottomCard(playerid,bottomCards);
@@ -214,11 +215,20 @@ var GameLayer = cc.Layer.extend({
 
 	_followCard : function(params){
 		Game_UI_Mgr.RemoveTempUI(params.player_id);
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
-		Game_Event_Center.DispatchEvent(
-			EventType.ET_DISCARD,
-			params
-		);
+
+		if(params.isFollow){
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_NOT_FOLLOW,params);
+			Game_Event_Center.DispatchEvent(
+				EventType.ET_NOT_FOLLOW_CARD,
+				params
+			);
+		}else{
+			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
+			Game_Event_Center.DispatchEvent(
+				EventType.ET_DISCARD,
+				params
+			);
+		}
 	},
 
 	_updateCardUI : function(id,index){
@@ -263,7 +273,7 @@ var GameLayer = cc.Layer.extend({
 	_createCardUI : function(id){
 		// console.log(id);
 
-		var card = Game_Rules.GetCardData(id);
+		var card = Game_Card_Mgr.getCardData(id);
 		var cardui = new CardUI(card);
 
 		this._cardUIList.push(cardui);
@@ -327,10 +337,10 @@ var GameLayer = cc.Layer.extend({
 		var cardList = this._mainPlayer.getCardList();
 
 		for(var i = 0;i < cards.length;i ++){
-			var cardData = cardMgr.getCardData(cards[i]);
+			var cardData = Game_Card_Mgr.getCardData(cards[i]);
 			var cardUI = new CardUI(cardData);
-			cardMgr.insert(cardList,cardData.soleID);
-			var index = cardMgr.getCardIndex(cardList,cardUI.getID());
+			Game_Card_Mgr.insert(cardList,cardData.soleID);
+			var index = Game_Card_Mgr.getCardIndex(cardList,cardUI.getID());
 			this._moveCard(index);
 			if(!this._cardUIList[index]){
 				var a = 0;

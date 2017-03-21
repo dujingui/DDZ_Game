@@ -112,6 +112,11 @@ var Player = cc.Sprite.extend({
 		this._isLandlord = true;
 	},
 
+	addBottomCards : function(cards){
+		this._cardList = CardUtil.mergeArray(this._cardList, cards);
+		Game_Card_Mgr.sort(this._cardList);
+	},
+
 	isLandlord : function(){
 		return this._isLandlord;
 	},

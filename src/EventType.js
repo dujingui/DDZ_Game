@@ -7,5 +7,5 @@ var EventType = {
 	ET_ROB_LANDLORD			: 'rob_landlord',	//抢地主
 	ET_CALL_CARD_OVER		: 'call_over',		//叫牌结束
 	ET_DISCARD 				: 'discard',		//某个玩家出牌了
-	ET_NOT_DISCARD 			: 'not_discard',	//某个玩家不出牌
+	ET_NOT_FOLLOW_CARD 		: 'not_follow_card',	//某个玩家不跟牌
 };
