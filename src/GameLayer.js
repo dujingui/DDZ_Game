@@ -193,6 +193,7 @@ var GameLayer = cc.Layer.extend({
 
 	//出牌
 	_discard : function(params){
+		this._updateCardNumUI(params.player_id);
 		Game_UI_Mgr.RemoveTempUI(params.player_id);
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
 		Game_Event_Center.DispatchEvent(
@@ -214,9 +215,10 @@ var GameLayer = cc.Layer.extend({
 	},
 
 	_followCard : function(params){
+		this._updateCardNumUI(params.player_id);
 		Game_UI_Mgr.RemoveTempUI(params.player_id);
 
-		if(params.isFollow){
+		if(!params.isFollow){
 			Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_NOT_FOLLOW,params);
 			Game_Event_Center.DispatchEvent(
 				EventType.ET_NOT_FOLLOW_CARD,
@@ -229,6 +231,16 @@ var GameLayer = cc.Layer.extend({
 				params
 			);
 		}
+	},
+
+	_updateCardNumUI : function(playerid){
+		var player = PlayerMgr.GetPlayer(playerid);
+		var temp = this._leftCardNum;
+		if(playerid === 2){
+			temp = this._rightCardNum;
+		}
+		var num = player.getCurCardNum();
+		temp.setString(num);
 	},
 
 	_updateCardUI : function(id,index){

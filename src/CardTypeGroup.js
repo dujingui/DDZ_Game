@@ -36,6 +36,9 @@ var CardTypeGroup = function(){
 		}else if(this.rocketGroups && this.rocketGroups.length > 0){
 			temp = this.rocketGroups;
 			type = CardDef.CardPatterns.CCP_Rocket;
+		}else{
+			throw new Error("牌已经出完了！");
+			return null;
 		}
 
 		var cardInfo = {
@@ -48,7 +51,7 @@ var CardTypeGroup = function(){
 		if(cardInfo.cards.length > 0 && cardInfo.type >= 0 && cardInfo.type < CardDef.CardPatterns.CCP_Max){
 			return cardInfo;
 		}else{
-			new Error("找不到牌！！！");
+			throw new Error("找不到牌！！！");
 		}
 	},
 
@@ -63,6 +66,7 @@ var CardTypeGroup = function(){
 					var cards = tempGroup[i];
 					if(CardUtil.compareBySoleID(cards[0],soleid) === 1){
 						result = tempGroup[i];
+						tempGroup.splice(i,1);
 						break;
 					}
 				}

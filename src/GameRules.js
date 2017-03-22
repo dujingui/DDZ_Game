@@ -135,7 +135,7 @@ function GameRules(){
 
 		Game_Notify_Center.Publish(
 			ObserverType.OT_START_FOLLOW_CARD,
-			{player_id:nextPlayer.getID()}
+			{player_id:nextPlayer.getID(),discard_info:params.discard_info}
 		);
 	},
 
@@ -150,8 +150,15 @@ function GameRules(){
 
 		Game_Notify_Center.Publish(
 			ObserverType.OT_START_FOLLOW_CARD,
-			{player_id:nextPlayer.getID()}
+			{player_id:nextPlayer.getID(),discard_info:params.discard_info}
 		);
+	},
+
+	//根据出牌信息判断是否是某个玩家出的牌
+	this.isPlayerDiscard = function(playerid,discardInfo){
+		var player = PlayerMgr.GetPlayer(playerid);
+		var soleid = discardInfo.cards[0];
+		return player.isBelongSelf(soleid);
 	},
 
 	//拆牌
@@ -341,6 +348,7 @@ function GameRules(){
 
 		setTimeout(function(){
 			cardsGroup.printCards();
+			player.discard(descardInfo.cards);
 			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{discard_info:descardInfo,player_id:id});
 		},2000);
 	},
@@ -351,14 +359,26 @@ function GameRules(){
 		if(!player.isSplit()){
 			this.splitCards(id);
 		}
+		if(!discard_info || !discard_info.cards || discard_info.cards.length<=0){
+			throw new Error("获取不到上家的出牌信息！");
+		}
+
+		if(this.isPlayerDiscard(id, discard_info)){
+			//没人跟牌，就继续出牌
+			this.calcDiscard(id);
+			return;
+		}
+
 		var cardTypeGroup = player.getCardTypeGroup();
 		var followCardInfo = cardTypeGroup.getFollowCardInfo(discard_info);
 		var isFollow = true;
 		if(!followCardInfo){
 			isFollow = false;
+			followCardInfo = discard_info;
 		}
 
 		setTimeout(function(){
+			player.discard(followCardInfo.cards);
 			Game_Notify_Center.Publish(
 				ObserverType.OT_FOLLOW_CARD,
 				{player_id: id, isFollow: isFollow, discard_info:followCardInfo}

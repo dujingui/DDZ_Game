@@ -57,6 +57,7 @@ function Game_UI_Mgr(){
 		var parent = cc.director.getRunningScene();
 		var initPosX,initPosY;
 		var node = new cc.Node();
+		var tag = 'discard-ui';
 		var cardSize = cc.size(56, 75);
 		var offset = 30;
 		var count = 0;
@@ -64,16 +65,12 @@ function Game_UI_Mgr(){
 			var a = 0;
 		}
 		for(var i = 0;i < cards.length;i ++){
-			// var cardGroup = cards[i];
-			// for(var j = 0;j < cardGroup.length;j ++){
-				// var cardSoleID = cardGroup[j];
-				var cardSoleID = cards[i];
-				var cardData = Game_Card_Mgr.getCardData(cardSoleID);
-				var cardui = new CardUI(cardData, true);
-				cardui.setPosition(i * offset, 0);
-				node.addChild(cardui);
-				count ++;
-			// }
+			var cardSoleID = cards[i];
+			var cardData = Game_Card_Mgr.getCardData(cardSoleID);
+			var cardui = new CardUI(cardData, true);
+			cardui.setPosition(i * offset, 0);
+			node.addChild(cardui);
+			count ++;
 		}
 		var allCardWidth = (count - 1) * offset + cardSize.width;
 		if(playerid === 1){
@@ -86,6 +83,8 @@ function Game_UI_Mgr(){
 			initPosX = size.width * 0.2;
 			initPosY = size.height * 0.6;
 		}
+		node.setTag(tag);
+		player.setTempUI(tag);
 		node.setPosition(initPosX,initPosY);
 		parent.addChild(node);
 	},
@@ -195,6 +194,9 @@ function Game_UI_Mgr(){
 	},
 
 	this.selfDiscard = function(params){
+		if(!params.discard_info){
+			var a = 0;
+		}
 		var def = this.getLabelDef();
 		var size = cc.winSize;
 		var parent = cc.director.getRunningScene();

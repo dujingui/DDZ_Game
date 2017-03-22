@@ -8,6 +8,7 @@ var Player = cc.Sprite.extend({
 	_isSplit	: null,//拆牌标记
 	_isRob		: null, //是否抢了地主
 	_isLandlord	: null, //是否是地主
+	_curCardNum	: null,	//当前牌的数量
 
 	_cardTypeGroups : null,	//牌型组
 
@@ -24,6 +25,10 @@ var Player = cc.Sprite.extend({
 
 	init : function(){
 		this._cardList = [];
+	},
+
+	getCurCardNum : function(){
+		return this._curCardNum;
 	},
 
 	setIsSplit : function(isSplit){
@@ -60,14 +65,20 @@ var Player = cc.Sprite.extend({
 
 	//出牌
 	discard : function(cards){
-		for(var i = 0; i< cards.length; i++){
-			for(var j = 0; j < this._cardList.length; j++){
-				if(cards[i] === this._cardList[j]){
-					this._cardList.splice(j, 1);
-					break;
-				}
-			}
-		}
+		this._curCardNum -= cards.length;
+		// for(var i = 0; i< cards.length; i++){
+		// 	for(var j = 0; j < this._cardList.length; j++){
+		// 		if(cards[i] === this._cardList[j]){
+		// 			this._cardList.splice(j, 1);
+		// 			break;
+		// 		}
+		// 	}
+		// }
+	},
+
+	//判断某张牌是不是自己的
+	isBelongSelf : function(soleid){
+		return CardUtil.isContainBySoleID(this._cardList,soleid);
 	},
 
 	getCardSoleID : function(index){
@@ -115,6 +126,8 @@ var Player = cc.Sprite.extend({
 	addBottomCards : function(cards){
 		this._cardList = CardUtil.mergeArray(this._cardList, cards);
 		Game_Card_Mgr.sort(this._cardList);
+
+		this._curCardNum += cards.length;
 	},
 
 	isLandlord : function(){
@@ -140,6 +153,7 @@ var Player = cc.Sprite.extend({
 	deal : function(id){
 		if(id >= 1 && id <= 54){
 			this._cardList.push(id);
+			++ this._curCardNum;
 		}
 	}
 });
