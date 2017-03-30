@@ -50,7 +50,7 @@ function Game_UI_Mgr(){
 	},
 
 	this.discardResult = function(params){
-		var cards = params.discard_info.cards;
+		var cards = params.cards;
 		var size = cc.winSize;
 		var playerid = params.player_id;
 		var player = PlayerMgr.GetPlayer(playerid);
@@ -194,49 +194,9 @@ function Game_UI_Mgr(){
 	},
 
 	this.selfDiscard = function(params){
-		if(!params.discard_info){
-			var a = 0;
-		}
-		var def = this.getLabelDef();
-		var size = cc.winSize;
 		var parent = cc.director.getRunningScene();
-		var notBtn = new ccui.Button(res.normal_btn,res.press_btn);
-		var hintBtn = new ccui.Button(res.normal_btn,res.press_btn);
-		var discardBtn = new ccui.Button(res.normal_btn,res.press_btn);
-		var notLabel = new cc.LabelTTF("不出",def);
-		var hintLabel = new cc.LabelTTF("提示",def);
-		var discardLabel = new cc.LabelTTF("出牌",def);
-		var btnsize = notBtn.getContentSize();
-		notLabel.setAnchorPoint(0.5,0.5);
-		hintLabel.setAnchorPoint(0.5,0.5);
-		discardLabel.setAnchorPoint(0.5,0.5);
-		notLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-		hintLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-		discardLabel.setPosition(btnsize.width * 0.5,btnsize.height * 0.5);
-		notBtn.addChild(notLabel);
-		hintBtn.addChild(hintLabel);
-		discardBtn.addChild(discardLabel);
-		notBtn.setPosition(size.width * 0.3, size.height * 0.4);
-		hintBtn.setPosition(size.width * 0.5, size.height * 0.4);
-		discardBtn.setPosition(size.width * 0.7, size.height * 0.4);
-		parent.addChild(notBtn);
-		parent.addChild(hintBtn);
-		parent.addChild(discardBtn);
-
-		var callback = function(sender,type){
-			if(type == ccui.Widget.TOUCH_ENDED){
-				notBtn.removeFromParent();
-				hintBtn.removeFromParent();
-				discardBtn.removeFromParent();
-				if(sender == notBtn){
-					Game_Event_Center.DispatchEvent(EventType.ET_NOT_FOLLOW_CARD,params);
-				}
-			}
-		}
-
-		notBtn.addTouchEventListener(callback);
-		hintBtn.addTouchEventListener(callback);
-		discardBtn.addTouchEventListener(callback);
+		var discardUI = new DiscardPhasesUI();
+		parent.addChild(discardUI);
 	},
 
 	this.selfCallCard = function(params){
@@ -274,8 +234,8 @@ function Game_UI_Mgr(){
 				noCallBtn.removeFromParent();
 				var isCall = sender.type == 'call';
 				Game_Event_Center.DispatchEvent(
-					EventType.ET_CALL_OR_NOT_LANDLORD,
-					{player_id:1,is_call:isCall}
+					EventType.ET_CLICK_CALL_BTN,
+					{is_call:isCall}
 				);
 			}
 		};
@@ -306,7 +266,7 @@ function Game_UI_Mgr(){
 				var isrob = sender.type == 'rob';
 				robBtn.removeFromParent();
 				noRobBtn.removeFromParent();
-				Game_Event_Center.DispatchEvent(EventType.ET_ROB_LANDLORD,{player_id:1,is_rob:isrob});
+				Game_Event_Center.DispatchEvent(EventType.ET_CLICK_ROB_BTN,{is_rob:isrob});
 			}
 		};
 

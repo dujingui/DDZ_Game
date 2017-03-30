@@ -23,3 +23,10 @@ CardDef.CardPatterns = {
 
 	CCP_Max					: 7,	//牌型判断
 };
+
+Game = {};
+
+Game.GameState = {
+	GS_Discard 			: 0,	//等待出牌
+	GS_FollowCard		: 1,	//等待跟牌
+};

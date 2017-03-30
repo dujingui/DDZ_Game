@@ -30,6 +30,10 @@ var CardUI = cc.Sprite.extend({
 		return this._id;
 	},
 
+	isSelected : function(){
+		return this._isSelected;
+	},
+
 	_init : function(cardData){
 		this.setTag(cardData.soleID);
 		this._id = cardData.soleID;
@@ -103,10 +107,7 @@ var CardUI = cc.Sprite.extend({
 				var s = target.getContentSize();
 				var rect = cc.rect(0,0,s.width,s.height);
 				if(cc.rectContainsPoint(rect,locationInNode)){
-					console.log("点击牌");
-
 					_this._setColor(50);
-
 					return true;
 				}
 				return false;
@@ -131,6 +132,9 @@ var CardUI = cc.Sprite.extend({
 		this._isSelected = true;
 
 		this.runAction(cc.moveBy(0.1,0,30));
+
+		console.log("选中牌");
+		Game_Event_Center.DispatchEvent(EventType.ET_SELECTED_CARD);
 		// this.setPositionY(this.getPositionY() + 30);
 	},
 
@@ -138,6 +142,9 @@ var CardUI = cc.Sprite.extend({
 		this._isSelected = false;
 
 		this.runAction(cc.moveBy(0.1,0,-30));
+
+		console.log("取消选中");
+		Game_Event_Center.DispatchEvent(EventType.ET_UNSELECTED_CARD);
 		// this.setPositionY(this.getPositionY() - 30);
 	}
 });

@@ -143,6 +143,12 @@ function CardManager(){
 		for(var i = 51;i < 54;i ++){
 			bottomCards.push(this.getSoleIDByIndex(i));
 		}
+
+		// bottomCards = [];
+		// bottomCards.push(1);
+		// bottomCards.push(2);
+		// bottomCards.push(3);
+
 		return bottomCards;
 	},
 
@@ -159,6 +165,21 @@ function CardManager(){
 			}
 		}
 		return card;
+	},
+
+	this.getCardColor = function(soleid){
+		var color = -1;
+		if(this._cards){
+			var cards = this._cards;
+			for(var i = 0;i < cards.length;i ++){
+				var card = cards[i];
+				if(card.soleID === soleid){
+					color = card.color;
+					break;
+				}
+			}
+		}
+		return color;
 	},
 
 	this.getCardValue = function(soleid){

@@ -14,7 +14,7 @@ function PlayerMgr(){
 	},
 
 	this.GetFirstRobPlayer = function(){
-		return firstRobPlayer;
+		return this.firstRobPlayer;
 	},
 
 	this.CreatePlayer = function(fileName,isAI){

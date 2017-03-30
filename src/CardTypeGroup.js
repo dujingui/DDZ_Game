@@ -41,9 +41,12 @@ var CardTypeGroup = function(){
 			return null;
 		}
 
+		var value = Game_Card_Mgr.getCardValue(temp[0][0]);
+
 		var cardInfo = {
 			cards: temp[0],
-			type : type
+			type : type,
+			value: value
 		};
 
 		temp.splice(0,1);
@@ -58,13 +61,14 @@ var CardTypeGroup = function(){
 	//获得要跟的牌
 	this.getFollowCardInfo = function(discardInfo){
 		var _this = this;
-		var getCards = function(soleid,type){
+		var getCards = function(value,type){
 			var tempGroup = _this.getCardGroupByType(type);
 			var result = null;
 			if(tempGroup){
 				for(var i = 0;i < tempGroup.length;i ++){
 					var cards = tempGroup[i];
-					if(CardUtil.compareBySoleID(cards[0],soleid) === 1){
+					var value2 = Game_Card_Mgr.getCardValue(cards[0]);
+					if(value2 > value){
 						result = tempGroup[i];
 						tempGroup.splice(i,1);
 						break;
@@ -76,7 +80,7 @@ var CardTypeGroup = function(){
 			}
 		};
 
-		var cards = getCards(discardInfo.cards[0], discardInfo.type);
+		var cards = getCards(discardInfo.value, discardInfo.type);
 
 		if(!cards){
 			return null;
@@ -84,7 +88,8 @@ var CardTypeGroup = function(){
 
 		var followCardInfo = {
 			cards: cards,
-			type: discardInfo.type
+			type: discardInfo.type,
+			value: Game_Card_Mgr.getCardValue(cards[0])
 		};
 		return followCardInfo;
 	},

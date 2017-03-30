@@ -12,16 +12,57 @@ function GameRules(){
 	this.isRobFag 	= false;	//首次抢地主标记位
 	this.CardNum 	= 54;
 
+	this.newDiscardInfo = null;	//记录最新的出牌信息
+	this.activePlayer = null;   //记录当前活跃的玩家
+
+	this.state = null;
+
 	this.Init = function(){
-		this.initEvent();
+	},
+
+	this.SetNewDiscardInfo = function(cardInfo){
+		this.newDiscardInfo = cardInfo;
+	},
+
+	this.GetNewDiscardInfo = function(){
+		return this.newDiscardInfo;
+	},
+
+	this.GetCurActivePlayer = function(){
+		return this.activePlayer;
+	},
+
+	this.GetState = function(){
+		return this.state;
+	},
+
+	//判断是否可以出选中的牌
+	this.IsCanDiscard = function(selected_card){
+		if(this.state === Game.GameState.GS_Discard){
+			var info = CardUtil.IsCombination(selected_card);
+			return info;
+		}else if(this.state === Game.GameState.GS_FollowCard){
+			var newDiscardInfo = this.newDiscardInfo;
+			var type = newDiscardInfo.type;
+			var info = CardUtil.combinationCards(selected_card, type);
+			if(info === null || newDiscardInfo === null){
+				return null;
+			}
+
+			if(info.value <= newDiscardInfo.value){
+				return null;
+			}
+
+			return info;
+		}
 	},
 
 	//开始游戏
-	this.startGame = function(){
+	this.StartGame = function(){
 	},
 
 	//发牌
-	this.deal = function(){
+	this.Deal = function(){
 		var tempPlayer = null;
 		var cardid = null;
 		var playerIndex = 0;
@@ -47,6 +88,35 @@ function GameRules(){
 		}
 	},
 
+	//如指定参数则指定该参数对应的玩家开始叫牌，否则随机指定一名玩家开始叫牌,
+	this.StartCallCard = function(playerid){
+		var randomPlayerid = Util.GetRandomNum(1,3);;
+		var callCardPlayerID = playerid || randomPlayerid;
+		var player = PlayerMgr.GetPlayer(callCardPlayerID);
+		if(player.isAI()){
+			this.calcIsCallCard(callCardPlayerID);
+		}
+		this.activePlayer = callCardPlayerID;
+		Game_Notify_Center.Publish(ObserverType.OT_START_CALL_CARD);
+	},
+
+	//有人出牌
+	this.Discard = function(player_id){
+		var player = PlayerMgr.GetPlayer(player_id);
+		var nextPlayer = player.nextPlayer();
+
+		if(nextPlayer.isAI()){
+			this.calcFollowSuit(nextPlayer.getID());
+		}else{
+			this.state = Game.GameState.GS_FollowCard;
+		}
+
+		Game_Notify_Center.Publish(
+			ObserverType.OT_START_FOLLOW_CARD,
+			{player_id:nextPlayer.getID()}
+		);
+	},
+
 	//设置某个玩家为地主
 	this.setLandlord = function(playerid){
 		var player = PlayerMgr.GetPlayer(playerid);
@@ -54,22 +124,11 @@ function GameRules(){
 		Game_Notify_Center.Publish(ObserverType.OT_BECOME_LANDLORD,{player_id:playerid});
 	},
 
-	//如指定参数则指定该参数对应的玩家开始叫牌，否则随机指定一名玩家开始叫牌,
-	this.startCallCard = function(playerid){
-		var randomPlayerid = Util.GetRandomNum(1,3);;
-		var callCardPlayerID = playerid || randomPlayerid;
-		var player = PlayerMgr.GetPlayer(callCardPlayerID);
-		if(player.isAI()){
-			this.calcIsCallCard(callCardPlayerID);
-		}
-		//通知界面 开始叫牌
-		Game_Notify_Center.Publish(ObserverType.OT_START_CALL_CARD,{player_id:callCardPlayerID});
-	},
-
 	//通知某个玩家开始抢地主
 	this.startRobLandlord = function(playerid){
 		//如果叫过地主并且没有玩家抢地主,则直接指定为地主
 		var _this = this;
+		this.activePlayer = playerid;
 		var player = PlayerMgr.GetPlayer(playerid);
 		if(player.isCall() && !PlayerMgr.isHasPlayerRob()){
 			player.setLandlord(true);
@@ -87,19 +146,22 @@ function GameRules(){
 		);
 	},
 
-	//叫地主
-	this.callLandlord = function(playerid,isCall){
+	//计算是否叫地主结束调用
+	this.callLandlord = function(isCall){
+		var playerid = this.activePlayer;
 		var player = PlayerMgr.GetPlayer(playerid);
 		player.setIsCall(isCall);
+
+		Game_Notify_Center.Publish(
+			ObserverType.OT_CALL_CARD,
+			{is_call:isCall}
+		);
+
 		if(isCall){
 			this.startRobLandlord(player.next());
 		}else{
-			this.startCallCard(player.next());
+			this.StartCallCard(player.next());
 		}
-		Game_Notify_Center.Publish(
-			ObserverType.OT_CALL_LANDLORD,
-			{player_id:playerid,is_call:isCall}
-		);
 	},
 
 	//抢地主
@@ -124,33 +186,37 @@ function GameRules(){
 		}
 	},
 
-	//有人出牌
-	this.playerDiscard = function(params){
-		var player = PlayerMgr.GetPlayer(params.player_id);
-		var nextPlayer = player.nextPlayer();
-
-		if(nextPlayer.isAI()){
-			this.calcFollowSuit(params.discard_info,nextPlayer.getID());
-		}
-
-		Game_Notify_Center.Publish(
-			ObserverType.OT_START_FOLLOW_CARD,
-			{player_id:nextPlayer.getID(),discard_info:params.discard_info}
-		);
-	},
-
 	//有人不出牌
-	this.notFollowCards = function(params){
-		var player = PlayerMgr.GetPlayer(params.player_id);
+	this.notFollowCards = function(playerid){
+		var player = PlayerMgr.GetPlayer(playerid);
 		var nextPlayer = player.nextPlayer();
 
+		var discardInfo = this.GetNewDiscardInfo();
+		if(!discardInfo || !discardInfo.cards || discardInfo.cards.length<=0){
+			throw new Error("获取不到出牌信息！");
+		}
+
+		if(this.isPlayerDiscard(nextPlayer.getID(), discardInfo)){
+			//没人跟牌，就继续出牌
+			if(nextPlayer.isAI()){
+				this.calcDiscard(nextPlayer.getID());
+			}else{
+				this.state = Game.GameState.GS_Discard;
+			}
+			Game_Notify_Center.Publish(
+				ObserverType.OT_START_DISCARD,
+				{player_id:nextPlayer.getID()}
+			);
+			return;
+		}
+
 		if(nextPlayer.isAI()){
-			this.calcFollowSuit(params.discard_info,nextPlayer.getID());
+			this.calcFollowSuit(nextPlayer.getID());
 		}
 
 		Game_Notify_Center.Publish(
 			ObserverType.OT_START_FOLLOW_CARD,
-			{player_id:nextPlayer.getID(),discard_info:params.discard_info}
+			{player_id:nextPlayer.getID()}
 		);
 	},
 
@@ -269,8 +335,15 @@ function GameRules(){
 		CardUtil.sortCardGroup(doubleGroups);
 		CardUtil.sortCardGroup(singleGroups);
 
+		//提取3带1
+		for(var i = 0;i < threeGroups.length;){
+			var three = threeGroups.splice(i,1)[0];
+			var one = singleGroups.splice(i,1)[0];
+			var threeAndOne = CardUtil.mergeArray(three,one);
+			threeAndOneGroups.push(threeAndOne);
+		}
+
 		var count = 1;
-		var tempArr = [];
 		var startIndex = 0;
 		//提取单顺
 		for(var i = 0;i < singleGroups.length - 1;i ++){
@@ -280,23 +353,38 @@ function GameRules(){
 			var numid2 = Game_Card_Mgr.getCardData(card2).numID;
 			if(numid1 === (numid2 - 1)){
 				count ++;
+				if(i+1 === singleGroups.length - 1){
+					if(count >= 5){
+						var tempArr = [];
+						for(var j = startIndex;j < startIndex+count;j++){
+							var tempSoleID = singleGroups[j][0];
+							tempArr.push(tempSoleID);
+						}
+						singleGroups.splice(startIndex, count);
+						singleStraigleGroups.push(tempArr);
+						tempArr = null;
+						i = 0;
+					}else{
+						count = 1;
+						startIndex = i + 1;
+					}
+				}
 			}else{
 				if(count >= 5){
-					tempArr = singleGroups.splice(startIndex, count);
+					var tempArr = [];
+					for(var j = startIndex;j < startIndex+count;j++){
+						var tempSoleID = singleGroups[j][0];
+						tempArr.push(tempSoleID);
+					}
+					singleGroups.splice(startIndex, count);
 					singleStraigleGroups.push(tempArr);
+					tempArr = null;
 					i = 0;
 				}else{
 					count = 1;
 					startIndex = i + 1;
 				}
 			}
-		}
-		//提取3带1
-		for(var i = 0;i < threeGroups.length;){
-			var three = threeGroups.splice(i,1)[0];
-			var one = singleGroups.splice(i,1)[0];
-			var threeAndOne = CardUtil.mergeArray(three,one);
-			threeAndOneGroups.push(threeAndOne);
 		}
 
 		playerGroups.setSigleCardGroups(singleGroups);
@@ -314,8 +402,7 @@ function GameRules(){
 		var _this = this;
 		var isCall = Util.GetRandomNum(0,1);
 		setTimeout(function(){
-			Game_Notify_Center.Publish(ObserverType.ET_CALL_CARD,{id:id,is_call:isCall});
-			_this.callLandlord(id,isCall);
+			_this.callLandlord(isCall);
 		},1000);
 	},
 
@@ -346,48 +433,52 @@ function GameRules(){
 		var cardsGroup = player.getCardTypeGroup();
 		var descardInfo = cardsGroup.getMinCardInfo();
 
+		this.newDiscardInfo = descardInfo;
+
 		setTimeout(function(){
 			cardsGroup.printCards();
 			player.discard(descardInfo.cards);
-			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{discard_info:descardInfo,player_id:id});
+			Game_Notify_Center.Publish(ObserverType.OT_DISCARD,{player_id:id});
 		},2000);
 	},
 
 	//计算如何跟牌 AI使用
-	this.calcFollowSuit = function(discard_info,id){
+	this.calcFollowSuit = function(id){
 		var player = PlayerMgr.GetPlayer(id);
 		if(!player.isSplit()){
 			this.splitCards(id);
 		}
-		if(!discard_info || !discard_info.cards || discard_info.cards.length<=0){
-			throw new Error("获取不到上家的出牌信息！");
-		}
-
-		if(this.isPlayerDiscard(id, discard_info)){
-			//没人跟牌，就继续出牌
-			this.calcDiscard(id);
-			return;
+		
+		var discardInfo = this.GetNewDiscardInfo();
+		if(!discardInfo || !discardInfo.cards || discardInfo.cards.length<=0){
+			throw new Error("获取不到出牌信息！");
 		}
 
 		var cardTypeGroup = player.getCardTypeGroup();
-		var followCardInfo = cardTypeGroup.getFollowCardInfo(discard_info);
+		var followCardInfo = cardTypeGroup.getFollowCardInfo(discardInfo);
+
+		cardTypeGroup.printCards();
+
 		var isFollow = true;
 		if(!followCardInfo){
 			isFollow = false;
-			followCardInfo = discard_info;
+		}else{
+			this.newDiscardInfo = followCardInfo;
 		}
 
 		setTimeout(function(){
-			player.discard(followCardInfo.cards);
+			if(isFollow){
+				player.discard(followCardInfo.cards);
+			}
 			Game_Notify_Center.Publish(
 				ObserverType.OT_FOLLOW_CARD,
-				{player_id: id, isFollow: isFollow, discard_info:followCardInfo}
+				{player_id: id, isFollow: isFollow}
 			);
 		},2000);
 	},
 
 	//叫牌结束后调用
-	this.callCardOver = function(){
+	this.CallCardOver = function(){
 		var landlordID = PlayerMgr.GetLandlordPlayer();
 		if(landlordID == -1){
 			return;
@@ -396,46 +487,11 @@ function GameRules(){
 
 		if(player.isAI()){
 			this.calcDiscard(landlordID);
+		}else{
+			this.state = Game.GameState.GS_Discard;
 		}
 		Game_Notify_Center.Publish(ObserverType.OT_START_DISCARD,{player_id:landlordID});
-	},
-
-	this.initEvent = function(){
-		var _this = this;
-		//开始游戏
-		Game_Event_Center.RegisterEvent(EventType.ET_START_GAME,function(){
-			_this.startGame();
-		});
-		//发牌
-		Game_Event_Center.RegisterEvent(EventType.ET_DEAL,function(){
-			_this.deal();
-		});
-		//发牌结束
-		Game_Event_Center.RegisterEvent(EventType.ET_DEAL_OVER,function(params){
-			_this.startCallCard();
-		});
-		//叫地主
-		Game_Event_Center.RegisterEvent(EventType.ET_CALL_OR_NOT_LANDLORD,function(params){
-			_this.callLandlord(params.player_id,params.is_call);
-		});
-		//抢地主
-		Game_Event_Center.RegisterEvent(EventType.ET_ROB_LANDLORD,function(params){
-			_this.robLandlord(params.player_id,params.is_rob);
-		});
-		//叫牌结束
-		Game_Event_Center.RegisterEvent(EventType.ET_CALL_CARD_OVER,function(params){
-			_this.callCardOver(params);
-		});
-		//某个玩家出牌了
-		Game_Event_Center.RegisterEvent(EventType.ET_DISCARD,function(params){
-			_this.playerDiscard(params);
-		});
-		//某个玩家不跟牌
-		Game_Event_Center.RegisterEvent(EventType.ET_NOT_FOLLOW_CARD,function(params){
-			_this.notFollowCards(params);
-		});
 	}
-
 };
 
 var Game_Rules = new GameRules();

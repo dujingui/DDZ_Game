@@ -15,29 +15,69 @@ var GameLayer = cc.Layer.extend({
 
 	_cardUIList : null,
 
+	_cardInitPos: cc.v2f(200,100),
+	_cardOffset: 40,
+
 	ctor : function(){
 		this._super();
 
 		this._cardUIList = [];
 		this._initBg();
 		this._initPlayerUI();
-		this._initEvent();
+		this._registerEvent();
+		this._registerObserver();
 
 		this._start();
 	},
 
 	_start : function(){
-		Game_Event_Center.DispatchEvent(EventType.ET_START_GAME);
-		Game_Event_Center.DispatchEvent(EventType.ET_DEAL);
+		Game_Rules.Deal();
 		this._deal();
 	},
 
-	_initEvent : function(){
+	_registerEvent : function(){
+		var _this = this;
+
+		//点击出牌按钮
+		Game_Event_Center.RegisterEvent(EventType.ET_CLICK_DISCARD_BTN,function(){
+			_this._clickDiscardBtn();
+		});
+
+		//选中牌
+		Game_Event_Center.RegisterEvent(EventType.ET_SELECTED_CARD,function(params){
+			_this._selectedCard();
+		});
+
+		//取消选中牌
+		Game_Event_Center.RegisterEvent(EventType.ET_UNSELECTED_CARD,function(){
+			_this._unselectedCard();
+		});
+
+		//点击叫地主和不叫地主按钮
+		Game_Event_Center.RegisterEvent(EventType.ET_CLICK_CALL_BTN,function(params){
+			_this._clickCallBtn(params);
+		});
+
+		//点击抢地主和不抢地主按钮
+		Game_Event_Center.RegisterEvent(EventType.ET_CLICK_ROB_BTN,function(params){
+			_this._clickRobBtn(params);
+		});
+
+		//点击不出牌按钮
+		Game_Event_Center.RegisterEvent(EventType.ET_CLICK_NOT_DISCARD,function(){
+			_this._clickNotDiscard();
+		});
+	},
+
+	_registerObserver : function(){
 		var _this = this;
 
 		//开始叫地主
-		Game_Notify_Center.Subscribe(ObserverType.OT_START_CALL_CARD,function(params){
-			_this._startCallCard(params.player_id);
+		Game_Notify_Center.Subscribe(ObserverType.OT_START_CALL_CARD,function(){
+			_this._startCallCard();
+		});
+		Game_Notify_Center.Subscribe(ObserverType.OT_CALL_CARD,function(params){
+			_this._callLandlord(params);
 		});
 		Game_Notify_Center.Subscribe(ObserverType.OT_AI_WAIT,function(params){
 			_this._aiWait(params.player_id);
@@ -50,10 +90,10 @@ var GameLayer = cc.Layer.extend({
 		Game_Notify_Center.Subscribe(ObserverType.OT_ROB_LANDLORD,function(params){
 			_this._robLandlord(params.player_id,params.is_rob,params.cards);
 		});
-		//叫地主
-		Game_Notify_Center.Subscribe(ObserverType.OT_CALL_LANDLORD,function(params){
-			_this._callLandlord(params.player_id,params.is_call);
-		})
+		// //叫地主
+		// Game_Notify_Center.Subscribe(ObserverType.OT_CALL_LANDLORD,function(params){
+		// 	_this._callLandlord(params.player_id,params.is_call);
+		// })
 		//成为地主
 		Game_Notify_Center.Subscribe(ObserverType.OT_BECOME_LANDLORD,function(params){
 			_this._becomeLandlord(params);
@@ -104,7 +144,8 @@ var GameLayer = cc.Layer.extend({
 			if(index >= 17){
 				//发牌结束
 				_this.unschedule(dealSchedule);
-				Game_Event_Center.DispatchEvent(EventType.ET_DEAL_OVER);
+				//开始叫牌
+				Game_Rules.StartCallCard();
 				return;
 			}
 			var cardid = _this._mainPlayer.getCardSoleID(index ++);
@@ -113,15 +154,11 @@ var GameLayer = cc.Layer.extend({
 		_this.schedule(dealSchedule,0.05);
 	},
 
-	//显示ai等待UI
-	_aiWait : function(id){
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{player_id:id});
-	},
-
 	//开始叫牌
-	_startCallCard : function(playerid){
+	_startCallCard : function(){
 		var _this = this;
 
+		var playerid = Game_Rules.GetCurActivePlayer();
         var player = PlayerMgr.GetPlayer(playerid);
         Game_UI_Mgr.RemoveTempUI(playerid);
         
@@ -130,6 +167,20 @@ var GameLayer = cc.Layer.extend({
         }else{
     		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_Self_CallCard);
         }
+	},
+
+	//某个玩家回应叫牌
+	_callLandlord : function(params){
+		var playerid = Game_Rules.GetCurActivePlayer();
+		var player = PlayerMgr.GetPlayer(playerid);
+
+		Game_UI_Mgr.RemoveTempUI(playerid);
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{player_id:playerid,is_call:params.is_call});
+	},
+
+	//显示ai等待UI
+	_aiWait : function(id){
+		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_AI_Wait,{player_id:id});
 	},
 
 	//开始抢地主
@@ -150,14 +201,6 @@ var GameLayer = cc.Layer.extend({
 		Game_UI_Mgr.RemoveTempUI(id);
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_ROB_RESULT_LABEL,{player_id:id,is_rob:isRob});
 		// Game_Event_Center.DispatchEvent(EventType.ET_PLAYER_ROB_OVER,{player_id:id});
-	},
-
-	//叫地主
-	_callLandlord : function(id,iscall){
-		var player = PlayerMgr.GetPlayer(id);
-
-		Game_UI_Mgr.RemoveTempUI(id);
-		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_CALL_RESULT_LABEL,{player_id:id,is_call:iscall});
 	},
 
 	//成为地主
@@ -193,13 +236,57 @@ var GameLayer = cc.Layer.extend({
 
 	//出牌
 	_discard : function(params){
+		params.cards = Game_Rules.GetNewDiscardInfo().cards;
 		this._updateCardNumUI(params.player_id);
 		Game_UI_Mgr.RemoveTempUI(params.player_id);
 		Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
-		Game_Event_Center.DispatchEvent(
-			EventType.ET_DISCARD,
-			params
-		);
+		Game_Rules.Discard(params.player_id);
+	},
+
+	//点击出牌按钮
+	_clickDiscardBtn : function(){
+		var selectedCards = this._getSelectedCards();
+		var info = Game_Rules.IsCanDiscard(selectedCards);
+		if(info){
+			var player = PlayerMgr.GetPlayer(1);
+			player.discard(info.cards);
+			this._followCard({player_id:1,isFollow: true},info);
+			this._selfDiscard(info.cards);
+			this._updateSelfCardUI();
+		}
+	},
+
+	//选中牌
+	_selectedCard : function(){
+		var selectedCards = this._getSelectedCards();
+		if(Game_Rules.IsCanDiscard(selectedCards)){
+			Game_Notify_Center.Publish(ObserverType.OT_CAN_DISCARD);
+		}else{
+			Game_Notify_Center.Publish(ObserverType.OT_NOT_CAN_DISCARD);
+		}
+	},
+
+	//取消选中牌
+	_unselectedCard : function(){
+		var selectedCards = this._getSelectedCards();
+		if(Game_Rules.IsCanDiscard(selectedCards)){
+			Game_Notify_Center.Publish(ObserverType.OT_CAN_DISCARD);
+		}else{
+			Game_Notify_Center.Publish(ObserverType.OT_NOT_CAN_DISCARD);
+		}
+	},
+
+	//
+	_clickCallBtn : function(parmas){
+		Game_Rules.callLandlord(parmas.is_call);
+	},
+
+	_clickRobBtn : function(params){
+		Game_Rules.robLandlord(1, params.is_rob);
+	},
+
+	_clickNotDiscard : function(){
+		Game_Rules.notFollowCards(1);
 	},
 
 	_startFollowCard : function(params){
@@ -214,22 +301,43 @@ var GameLayer = cc.Layer.extend({
 		}
 	},
 
-	_followCard : function(params){
+	_followCard : function(params, cards){
 		this._updateCardNumUI(params.player_id);
 		Game_UI_Mgr.RemoveTempUI(params.player_id);
 
+		var cardInfo = cards || Game_Rules.GetNewDiscardInfo();
+		params.cards = cardInfo.cards;
+
 		if(!params.isFollow){
 			Game_UI_Mgr.ShowUI(Game_UI_Type.GUI_NOT_FOLLOW,params);
-			Game_Event_Center.DispatchEvent(
-				EventType.ET_NOT_FOLLOW_CARD,
-				params
-			);
+			Game_Rules.notFollowCards(params.player_id);
 		}else{
 			Game_UI_Mgr.ShowUI(Game_UI_Type.GUT_DISCARD_RESULT,params);
-			Game_Event_Center.DispatchEvent(
-				EventType.ET_DISCARD,
-				params
-			);
+			Game_Rules.SetNewDiscardInfo(cardInfo);
+			Game_Rules.Discard(params.player_id);
+		}
+	},
+
+	_selfDiscard : function(cards){
+		for(var i = 0;i < cards.length;i ++){
+			for(var j = 0;j < this._cardUIList.length;j++){
+				var cardui = this._cardUIList[j];
+				if(cardui.getID() === cards[i]){
+					cardui.removeFromParent();
+					cardui = null;
+					this._cardUIList.splice(j, 1);
+					break;
+				}
+			}
+		}
+	},
+
+	_updateSelfCardUI : function(){
+		this.tempTest = 0;
+		for(var j = 0;j < this._cardUIList.length;j++){
+			var cardui = this._cardUIList[j];
+			cardui.setPositionX(this._cardInitPos.x + this.tempTest * this._cardOffset);
+			this.tempTest++;
 		}
 	},
 
@@ -245,7 +353,7 @@ var GameLayer = cc.Layer.extend({
 
 	_updateCardUI : function(id,index){
 		var sp  = this._createCardUI(id);
-		sp.setPosition(200 + this.tempTest * 40,100);
+		sp.setPosition(this._cardInitPos.x + this.tempTest * this._cardOffset,this._cardInitPos.y);
 		this.addChild(sp);
 
         var size = cc.winSize;
@@ -302,6 +410,17 @@ var GameLayer = cc.Layer.extend({
 		}
 	},
 
+	_getSelectedCards : function(){
+		var selectedCards = [];
+		for(var i = 0;i < this._cardUIList.length;i ++){
+			var cardui = this._cardUIList[i];
+			if(cardui.isSelected()){
+				selectedCards.push(cardui.getID());
+			}
+		}
+		return selectedCards;
+	},
+
 	_dealBottomCard : function(id,cards){
 		var _this = this;
 		var player = PlayerMgr.GetPlayer(id);
@@ -323,7 +442,7 @@ var GameLayer = cc.Layer.extend({
 			node.setScale(0);
 			node.setPosition(cc.winSize.width * 0.5,cc.winSize.height - 50);
 			node.runAction(cc.sequence(cc.scaleTo(0.1,1),cc.callFunc(function(){
-				Game_Event_Center.DispatchEvent(EventType.ET_CALL_CARD_OVER);
+				Game_Rules.CallCardOver();
 			})));
 		}
 

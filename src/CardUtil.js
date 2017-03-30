@@ -11,6 +11,297 @@ var CardUtil = {
 		return false;
 	},
 
+	//是否为单牌
+	isSigleCard : function(cards){
+		if(!cards || cards.length !== 1){
+			return null;
+		}
+
+		var value = Game_Card_Mgr.getCardValue(cards[0]);
+
+		var info = {
+			cards : cards,
+			type : CardDef.CardPatterns.CCP_Single,
+			value : value
+		};
+
+		return info;
+	},
+
+	//是否为单顺
+	isSigleStraight : function(cards){
+		if(!cards || cards.length < 5){
+			return null;
+		}
+		Game_Card_Mgr.sort(cards);
+		var len = cards.length - 1;
+		for(var i = 0; i < len; i ++){
+			var value1 = Game_Card_Mgr.getCardValue(cards[i]);
+			var value2 = Game_Card_Mgr.getCardValue(cards[i+1]);
+			if(value1 !== (value2 + 1)){
+				return null;
+			}
+		}
+
+		var value = Game_Card_Mgr.getCardValue(cards[cards.length - 1]);
+		var info = {
+			cards: cards,
+			type: CardDef.CardPatterns.CCP_Single_Straight,
+			value: value
+		};
+		return info;
+	},
+
+	//是否为对牌
+	isDoubleCard : function(cards){
+		if(!cards || cards.length !== 2){
+			return null;
+		}
+
+		var value1 = Game_Card_Mgr.getCardValue(cards[0]);
+		var value2 = Game_Card_Mgr.getCardValue(cards[1]);
+
+		if(value1 !== value2){
+			return null;
+		}
+
+		var value = value1;
+		var info = {
+			cards: cards,
+			type: CardDef.CardPatterns.CCP_Double,
+			value: value
+		};
+
+		return info;
+	},
+
+	//是否为对顺
+	isDoubleStraight : function(cards){
+		if(!cards || cards.length < 6 || cards.length % 2 !== 0){
+			return null;
+		}
+		Game_Card_Mgr.sort(cards);
+		var len = cards.length;
+		for(var i = 0; i < len; i += 2){
+			var value1 = Game_Card_Mgr.getCardValue(cards[i]);
+			var value2 = Game_Card_Mgr.getCardValue(cards[i+1]);
+			if(value1 !== value2){
+				return null;
+			}
+		}
+
+		len = cards.length - 2;
+		for(var j = 0; j < len; j += 2){
+			var value1 = Game_Card_Mgr.getCardValue(cards[j]);
+			var value2 = Game_Card_Mgr.getCardValue(cards[j+2]);
+			if(value1 !== (value2 + 1)){
+				return null;
+			}
+		}
+
+		var value = Game_Card_Mgr.getCardValue(cards[cards.length - 2]);
+		var info = {
+			cards: cards,
+			type: CardDef.CardPatterns.CCP_Double_Straight,
+			value: value
+		};
+		return info;
+	},
+
+	//是否为3带1
+	isThreeAndOne : function(cards){
+		if(!cards || cards.length !== 4){
+			return null;
+		}
+		Game_Card_Mgr.sort(cards);
+		var len = cards.length - 1;
+		var count = 1;
+
+		var cardGroupValue = -1;
+
+		for(var i = 0;i < len;i ++){
+			var value1 = Game_Card_Mgr.getCardValue(cards[i]);
+			var value2 = Game_Card_Mgr.getCardValue(cards[i+1]);
+			if(value1 === value2){
+				count ++;
+				cardGroupValue = value1;
+			}
+		}
+
+		if(count !== 3){
+			return null; 
+		}
+
+		var info = {
+			cards : cards,
+			type : CardDef.CardPatterns.CCP_ThreeAndOne,
+			value : cardGroupValue
+		};
+
+		return info;
+	},
+
+	//是否为炸弹
+	isBomb : function(cards){
+		if(!cards || cards.length !== 4){
+			return null;
+		}
+		var len = cards.length - 1;
+		var count = 1;
+
+		for(var i = 0;i < len;i ++){
+			var value1 = Game_Card_Mgr.getCardValue(cards[i]);
+			var value2 = Game_Card_Mgr.getCardValue(cards[i+1]);
+			if(value1 === value2){
+				count ++;
+			}
+		}
+
+		if(count !== 4){
+			return null; 
+		}
+
+		var value = Game_Card_Mgr.getCardValue(cards[0]);
+		var info = {
+			cards: cards,
+			type: CardDef.CardPatterns.CCP_Bomb,
+			value: value
+		};
+
+		return info;
+	},
+
+	//是否为火箭
+	isRocket : function(cards){
+		if(!cards || cards.length !== 2){
+			return null;
+		}
+
+		Game_Card_Mgr.sort(cards);
+
+		var color1 = Game_Card_Mgr.getCardColor(cards[0]);
+		var color2 = Game_Card_Mgr.getCardColor(cards[1]);
+
+		if(color2 !== CardDef.CardColor.CC_DigJoker || color1 !== CardDef.CardColor.CC_SmallJoker){
+			return null;
+		}
+
+		var value = 999;
+		var info = {
+			cards: cards,
+			type: CardDef.CardPatterns.CCP_Rocket,
+			value: value
+		};
+
+		return info;
+	},
+
+	//是否为指定类型的牌 
+	toSpecifyTypeOfCard : function(cards, type){
+		var info = null;
+		switch(type){
+			case CardDef.CardPatterns.CCP_Single:
+			{
+				info = this.isSigleCard(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Single_Straight:
+			{
+				info = this.isSigleStraight(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Double:
+			{
+				info = this.isDoubleCard(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Double_Straight:
+			{
+				info = this.isDoubleStraight(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_ThreeAndOne:
+			{
+				info = this.isThreeAndOne(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Bomb:
+			{
+				info = this.isBomb(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Rocket:
+			{
+				info = this.isRocket (cards);
+				break;
+			}
+		}
+		return info;
+	},
+
+	//判断数组cards中的牌是否可以组合成可出的牌型
+	IsCombination : function(cards){
+		var info = null;
+		info = this.isSigleCard(cards);
+		if(info)return info;
+		info = this.isSigleStraight(cards);
+		if(info)return info;
+		info = this.isDoubleCard(cards);
+		if(info)return info;
+		info = this.isDoubleStraight(cards);
+		if(info)return info;
+		info = this.isThreeAndOne(cards);
+		if(info)return info;
+		info = this.isBomb(cards);
+		if(info)return info;
+		info = this.isBomb(cards);
+		if(info)return info;
+		return null;
+	},
+
+	//组合数组cards中的牌为指定的类型
+	combinationCards :function(cards, type){
+		var info = null;
+		switch(type){
+			case CardDef.CardPatterns.CCP_Single:
+			{
+				info = this.isSigleCard(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Single_Straight:
+			{
+				info = this.isSigleStraight(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Double:
+			{
+				info = this.isDoubleCard(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Double_Straight:
+			{
+				info = this.isDoubleStraight(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_ThreeAndOne:
+			{
+				info = this.isThreeAndOne(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Bomb:
+			{
+				info = this.isBomb(cards);
+				break;
+			}
+			case CardDef.CardPatterns.CCP_Rocket:
+			{
+				info = this.isRocket (cards);
+				break;
+			}
+		}
+		return info;
+	},
+
 	//判断array数组是否包含于soleid相同的牌
 	isContainBySoleID : function(array,soleid){
 		for(var i = 0;i < array.length;i ++){

@@ -14,6 +14,8 @@ var Player = cc.Sprite.extend({
 
 	_tempUI 	: null,
 
+	_test		:null,	//测试用
+
 	ctor : function(fileName,isAI){
 		this._super(fileName);
 
@@ -151,6 +153,11 @@ var Player = cc.Sprite.extend({
 	},
 
 	deal : function(id){
+		// if(!this.test){
+		// 	this.test = 1;
+		// }
+		// this._cardList.push(this.test++);
+
 		if(id >= 1 && id <= 54){
 			this._cardList.push(id);
 			++ this._curCardNum;
