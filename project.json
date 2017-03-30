@@ -26,6 +26,8 @@
         "src/PlayerMgr.js",
         "src/CardUtil.js",
         "src/CardUI.js",
+        "src/BasicUI.js",
+        "src/DiscardPhasesUI.js",
         "src/GameRules.js",
         "src/Player.js",
         "src/GameLayer.js",
