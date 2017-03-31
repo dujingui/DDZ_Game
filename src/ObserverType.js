@@ -13,4 +13,5 @@ var ObserverType = {
 	OT_FOLLOW_CARD 			: 'follow_card',//跟牌
 	OT_CAN_DISCARD 			: 'can_discard',//可以出牌
 	OT_NOT_CAN_DISCARD		: 'not_can_discard',//不可以出牌
+	OT_GAME_OVER			: 'game_over',//游戏结束
 };

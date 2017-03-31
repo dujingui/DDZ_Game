@@ -114,6 +114,10 @@ var GameLayer = cc.Layer.extend({
 		Game_Notify_Center.Subscribe(ObserverType.OT_FOLLOW_CARD,function(params){
 			_this._followCard(params);
 		});
+		//游戏结束
+		Game_Notify_Center.Subscribe(ObserverType.OT_GAME_OVER,function(params){
+			_this._gameOver(params);
+		});
 	},
 
 	_initPlayerUI : function(){
@@ -208,9 +212,9 @@ var GameLayer = cc.Layer.extend({
 		var playerid = params.player_id;
 		var bottomCards = Game_Card_Mgr.getBottomCard();
 		var player = PlayerMgr.GetPlayer(playerid);
-		player.addBottomCards(bottomCards);
 		Game_UI_Mgr.RemoveAllTempUI();
 		if(player.isAI()){
+			player.addBottomCards(bottomCards);
 			this._dealBottomCard(playerid,bottomCards);
 		}else{
 			this._dealBottomCard(playerid,bottomCards);
@@ -274,6 +278,24 @@ var GameLayer = cc.Layer.extend({
 		}else{
 			Game_Notify_Center.Publish(ObserverType.OT_NOT_CAN_DISCARD);
 		}
+	},
+
+	_gameOver : function(params){
+		var isLandlord = PlayerMgr.GetPlayer(1).isLandlord();
+		var result = params.result;
+		var fileName = CardUtil.getGameOverImage(result, isLandlord);
+		var parent = cc.director.getRunningScene();
+		var layer = new cc.LayerColor();
+		layer.setColor(cc.color(0, 0, 0));
+		layer.setOpacity(150);
+		layer.setLocalZOrder(100);
+
+		var sprite = new cc.Sprite(fileName);
+		sprite.setPosition(cc.winSize.width * 0.5, cc.winSize.height * 0.5);
+		sprite.setLocalZOrder(101);
+
+		parent.addChild(layer);
+		parent.addChild(sprite);
 	},
 
 	//
@@ -437,12 +459,15 @@ var GameLayer = cc.Layer.extend({
 			cardui.setPosition(i*offset,0);
 			node.addChild(cardui);
 		}
-
+		var isCall = false;
 		var showBottomCard = function(){
 			node.setScale(0);
 			node.setPosition(cc.winSize.width * 0.5,cc.winSize.height - 50);
 			node.runAction(cc.sequence(cc.scaleTo(0.1,1),cc.callFunc(function(){
-				Game_Rules.CallCardOver();
+				if(!isCall){
+					isCall = true;
+					Game_Rules.CallCardOver();
+				}
 			})));
 		}
 
@@ -499,6 +524,9 @@ var GameLayer = cc.Layer.extend({
 	_moveCard : function(index){
 		for(var i = 0;i < index;i ++){
 			var cardUI = this._cardUIList[i];
+			if(!cardUI){
+				var a = 0;
+			}
 			cardUI.setPositionX(cardUI.getPositionX() - 40);
 		}
 	},

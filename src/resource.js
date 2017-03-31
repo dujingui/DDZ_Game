@@ -20,6 +20,10 @@ var res = {
     disabled_btn : "res/btn_gray.png",
     clock : "res/zhong.png",
     card_wang_small : "res/card_wang1.png",
+    landlord_victory : "res/landlord_victory.png",
+    landlord_lose : "res/landlord_lose.png",
+    peasant_victory : "res/peasant_victory.png",
+    peasant_lose : "res/peasant_lose.png",
     card_wang : "res/card_wang.png"
 };
 

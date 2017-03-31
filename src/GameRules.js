@@ -90,7 +90,7 @@ function GameRules(){
 
 	//如指定参数则指定该参数对应的玩家开始叫牌，否则随机指定一名玩家开始叫牌,
 	this.StartCallCard = function(playerid){
-		var randomPlayerid = Util.GetRandomNum(1,3);;
+		var randomPlayerid = 1;//Util.GetRandomNum(1,3);;
 		var callCardPlayerID = playerid || randomPlayerid;
 		var player = PlayerMgr.GetPlayer(callCardPlayerID);
 		if(player.isAI()){
@@ -103,6 +103,18 @@ function GameRules(){
 	//有人出牌
 	this.Discard = function(player_id){
 		var player = PlayerMgr.GetPlayer(player_id);
+		if(this.isDiscardOver(player_id))
+		{
+			//已经出完牌了
+			var result = this.calcSelfGameResult(player_id);
+			Game_Notify_Center.Publish(
+				ObserverType.OT_GAME_OVER,
+				{result:result}
+			);
+			return;
+		}
+
+
 		var nextPlayer = player.nextPlayer();
 
 		if(nextPlayer.isAI()){
@@ -144,6 +156,33 @@ function GameRules(){
 			ObserverType.OT_START_ROB_LANDLORD,
 			{player_id:playerid}
 		);
+	},
+
+	//计算自己的输赢
+	this.calcSelfGameResult = function(playerid){
+		var player = PlayerMgr.GetPlayer(playerid);
+		if(!player.isAI()){
+			return true;
+		}
+		if(player.isLandlord()){
+			return false;
+		}else{
+			if(PlayerMgr.GetPlayer(1).isLandlord()){
+				return false;
+			}else{
+				return true;
+			}
+		}
+	},
+
+	//是否出牌结束
+	this.isDiscardOver = function(player_id){
+		var player = PlayerMgr.GetPlayer(player_id);
+		if(player.getCurCardNum() <= 0){
+			//已经出完牌了
+			return true;
+		}
+		return false;
 	},
 
 	//计算是否叫地主结束调用

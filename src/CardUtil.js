@@ -125,6 +125,8 @@ var CardUtil = {
 			if(value1 === value2){
 				count ++;
 				cardGroupValue = value1;
+			}else{
+				break;
 			}
 		}
 
@@ -262,6 +264,9 @@ var CardUtil = {
 	//组合数组cards中的牌为指定的类型
 	combinationCards :function(cards, type){
 		var info = null;
+		if(type === CardDef.CardPatterns.CCP_Rocket){
+			return info;
+		}
 		switch(type){
 			case CardDef.CardPatterns.CCP_Single:
 			{
@@ -293,12 +298,15 @@ var CardUtil = {
 				info = this.isBomb(cards);
 				break;
 			}
-			case CardDef.CardPatterns.CCP_Rocket:
-			{
-				info = this.isRocket (cards);
-				break;
-			}
 		}
+
+		if(info === null){
+			info = this.isBomb(cards);
+			if(info)return info;
+			info = this.isRocket(cards);
+			if(info)return info;
+		}
+
 		return info;
 	},
 
@@ -421,6 +429,23 @@ var CardUtil = {
 			newArray.push(array2[i]);
 		}
 		return newArray;
+	},
+
+	//根据游戏结束结果返回图片
+	getGameOverImage : function(isVictory, isLandlord){
+		var role = null;
+		var result = null;
+		if(isLandlord){
+			role = 'landlord';
+		}else{
+			role = 'peasant';
+		}
+		if(isVictory){
+			result = 'victory';
+		}else{
+			result = 'lose';
+		}
+		return res[role + "_" + result];
 	},
 
 	getCardRect : function(color,numid){

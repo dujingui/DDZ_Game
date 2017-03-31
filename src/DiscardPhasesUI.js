@@ -8,6 +8,7 @@ var DiscardPhasesUI = BasicUI.extend({
 
 	ctor : function(){
 		this._super();
+		this.setName("DiscardPhasesUI");
 		this._registerObserver();
 	},
 
